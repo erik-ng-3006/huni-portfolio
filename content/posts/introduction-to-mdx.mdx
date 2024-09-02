@@ -1,0 +1,60 @@
+---
+title: 'Introduction to MDX'
+summary:
+  'MDX is a powerful tool that allows you to write JSX in your Markdown
+  documents.'
+author: 'Erik Nguyen'
+date: '2024-08-30'
+---
+
+# Introduction to MDX
+
+MDX is an innovative format that merges the simplicity of Markdown with the
+power of JSX, allowing you to write content that includes both text and React
+components. This makes MDX particularly suitable for modern documentation,
+blogs, and interactive content.
+
+## What is MDX?
+
+MDX stands for Markdown with JSX. It enables you to write Markdown documents
+that can seamlessly incorporate React components. This means you can create
+rich, interactive content without sacrificing the readability and simplicity of
+Markdown. With MDX, you can enhance your static content with dynamic elements,
+making it more engaging for users.
+
+```
+import {Chart} from './snowfall.js'
+export const year = 2023
+
+# Last year’s snowfall
+
+In {year}, the snowfall was above average.
+It was followed by a warm spring which caused
+flood conditions in many of the nearby rivers.
+
+<Chart year={year} color="#fcb32c" />
+```
+
+## Why Use MDX?
+
+Here are some compelling reasons to use MDX:
+
+1. **Interactivity**: MDX allows you to include interactive React components,
+   such as buttons, forms, and charts, directly within your content.
+2. **Reusability**: You can create reusable components that can be shared across
+   different MDX files, promoting consistency and reducing duplication.
+3. **Enhanced Content Creation**: The combination of Markdown and JSX makes it
+   easier for developers and content creators to produce engaging content
+   quickly.
+4. **Dynamic Rendering**: MDX supports dynamic content, allowing for more
+   complex user interactions and real-time updates.
+
+   <Counter />
+
+## Conclusion
+
+MDX is a powerful tool for combining the simplicity of Markdown with the
+flexibility of React components. It enhances the content creation process,
+making it easier to produce interactive and engaging documents. Whether you're
+building documentation, blogs, or complex applications, MDX offers a modern
+solution for content-driven projects.
