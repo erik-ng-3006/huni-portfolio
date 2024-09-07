@@ -1,0 +1,114 @@
+---
+title: 'Understanding Linked Lists in Java'
+summary:
+  'This blog post explores the concept of linked lists in Java, discussing their
+  types, advantages, disadvantages, and a simple implementation.'
+author: 'Erik Nguyen'
+date: '2024-09-07'
+---
+
+# Understanding Linked Lists in Java
+
+## Introduction
+
+Linked lists are a fundamental data structure used in computer science to store
+a collection of elements. Unlike arrays, linked lists do not require contiguous
+memory allocation, making them more flexible in terms of memory usage. This blog
+post will explore the concept of linked lists in Java, their advantages,
+disadvantages, and how to implement them.
+
+## What is a Linked List?
+
+A linked list consists of nodes, where each node contains two components:
+
+1. **Data**: The value stored in the node.
+2. **Pointer/Reference**: A reference to the next node in the sequence.
+
+The first node is called the **head**, and the last node points to `null`,
+indicating the end of the list.
+
+## Types of Linked Lists
+
+1. **Singly Linked List**: Each node points to the next node, allowing traversal
+   in one direction.
+2. **Doubly Linked List**: Each node contains two pointers, one pointing to the
+   next node and another to the previous node, allowing traversal in both
+   directions.
+3. **Circular Linked List**: The last node points back to the head, forming a
+   circle.
+
+## Advantages of Linked Lists
+
+- **Dynamic Size**: Linked lists can grow and shrink in size as needed, unlike
+  arrays which have a fixed size.
+- **Efficient Insertions/Deletions**: Adding or removing nodes is more efficient
+  than in an array, especially when working with large datasets.
+
+## Disadvantages of Linked Lists
+
+- **Memory Overhead**: Each node requires additional memory for the
+  pointer/reference.
+- **Access Time**: Linked lists do not allow random access; accessing an element
+  requires traversing from the head.
+
+## Implementing a Singly Linked List in Java
+
+Here’s a simple implementation of a singly linked list in Java:
+
+```java
+class Node {
+    int data;
+    Node next;
+
+    Node(int data) {
+        this.data = data;
+        this.next = null;
+    }
+}
+
+class LinkedList {
+    Node head;
+
+    // Method to insert a new node at the end
+    public void insert(int data) {
+        Node newNode = new Node(data);
+        if (head == null) {
+            head = newNode;
+        } else {
+            Node current = head;
+            while (current.next != null) {
+                current = current.next;
+            }
+            current.next = newNode;
+        }
+    }
+
+    // Method to display the linked list
+    public void display() {
+        Node current = head;
+        while (current != null) {
+            System.out.print(current.data + " -> ");
+            current = current.next;
+        }
+        System.out.println("null");
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        LinkedList list = new LinkedList();
+        list.insert(10);
+        list.insert(20);
+        list.insert(30);
+        list.display(); // Output: 10 -> 20 -> 30 -> null
+    }
+}
+```
+
+## Conclusion
+
+Linked lists are a powerful data structure that provides flexibility in managing
+collections of data. While they have their pros and cons, understanding how to
+implement and utilize linked lists can greatly enhance your programming skills
+and efficiency in Java. Whether you are building complex data structures or
+simply need a dynamic list, linked lists are worth considering.
