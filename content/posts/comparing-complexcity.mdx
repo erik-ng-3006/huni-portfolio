@@ -1,0 +1,134 @@
+---
+title: 'Comparing Complexity: Stack, Queue, Linked List, Array, and Hashtable'
+summary:
+  'This blog post explores the time complexities of fundamental data structures:
+  stacks, queues, linked lists, arrays, and hashtables, helping you choose the
+  right one for your application.'
+author: 'Erik Nguyen'
+date: '2024-09-09'
+---
+
+# Comparing Complexity: Stack, Queue, Linked List, Array, and Hashtable
+
+In the world of data structures, understanding the complexity of operations is
+crucial for optimizing performance. This blog post will delve into the time
+complexities associated with five fundamental data structures: stacks, queues,
+linked lists, arrays, and hashtables. We will explore their strengths and
+weaknesses, helping you choose the right structure for your application.
+
+## 1. Stack
+
+### Overview
+
+A stack is a Last In, First Out (LIFO) data structure where the last element
+added is the first to be removed. Operations are typically performed at one end.
+
+### Time Complexity
+
+- **Push (insert)**: O(1)
+- **Pop (remove)**: O(1)
+- **Peek (top element)**: O(1)
+
+### Use Cases
+
+Stacks are commonly used in scenarios such as function call management,
+expression evaluation, and backtracking algorithms.
+
+---
+
+## 2. Queue
+
+### Overview
+
+A queue is a First In, First Out (FIFO) structure where the first element added
+is the first to be removed. Elements are added at the back and removed from the
+front.
+
+### Time Complexity
+
+- **Enqueue (insert)**: O(1)
+- **Dequeue (remove)**: O(1)
+- **Peek (front element)**: O(1)
+
+### Use Cases
+
+Queues are ideal for scheduling tasks, managing requests in a print queue, or
+implementing breadth-first search in graphs.
+
+---
+
+## 3. Linked List
+
+### Overview
+
+A linked list is a collection of nodes where each node contains data and a
+reference to the next node. It allows for efficient insertion and deletion.
+
+### Time Complexity
+
+- **Insertion (at head)**: O(1)
+- **Insertion (at tail)**: O(n) (without a tail pointer)
+- **Deletion**: O(n) (to find the node)
+- **Access**: O(n) (to find an element)
+
+### Use Cases
+
+Linked lists are useful for dynamic memory allocation, implementing stacks and
+queues, and managing large datasets where frequent insertions and deletions
+occur.
+
+---
+
+## 4. Array
+
+### Overview
+
+An array is a collection of elements identified by index or key. It allows for
+fast access but has a fixed size.
+
+### Time Complexity
+
+- **Access**: O(1)
+- **Insertion (at end)**: O(1) (amortized)
+- **Insertion (at specific index)**: O(n)
+- **Deletion**: O(n)
+
+### Use Cases
+
+Arrays are best for situations where quick access to elements is necessary, such
+as in sorting algorithms and implementing other data structures.
+
+---
+
+## 5. Hashtable
+
+### Overview
+
+A hashtable stores key-value pairs and uses a hash function to compute an index
+into an array of buckets or slots.
+
+### Time Complexity
+
+- **Insertion**: O(1) (average case)
+- **Deletion**: O(1) (average case)
+- **Search**: O(1) (average case)
+- **Worst Case**: O(n) (with many collisions)
+
+### Use Cases
+
+Hashtables are excellent for implementing associative arrays, caching, and
+maintaining unique items.
+
+---
+
+## Conclusion
+
+Choosing the right data structure depends on the specific requirements of your
+application. If you need fast access and fixed size, arrays may be your best
+bet. For dynamic datasets with frequent insertions and deletions, linked lists
+shine. Stacks and queues are perfect for managing order, while hashtables
+provide efficient key-value storage.
+
+Understanding the complexities of these data structures is essential for making
+informed decisions in software development, ensuring optimal performance and
+resource management.
