@@ -17,9 +17,9 @@ const components = {
   Counter,
   Alert,
   Quiz,
-  SchemaVisualizer,
-  ExpandableSection,
-  InteractiveCodeSnippet
+  //SchemaVisualizer,
+  ExpandableSection
+  //InteractiveCodeSnippet
 }
 
 const MDXContent = (props: JSX.IntrinsicAttributes & MDXRemoteProps) => {
