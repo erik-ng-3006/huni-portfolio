@@ -71,8 +71,8 @@ export default function Quiz({ questions }: QuizProps) {
 
   if (isQuizCompleted) {
     const score = userAnswers.reduce(
-      (total, answer, index) =>
-        answer === questions[index].correctAnswer ? total + 1 : total,
+      (total = 0, answer, index) =>
+        answer === questions[index].correctAnswer ? total! + 1 : total,
       0
     )
 
