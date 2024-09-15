@@ -1,0 +1,239 @@
+---
+title: 'SQL for Beginners'
+summary:
+  'A comprehensive guide to SQL, exploring its features, benefits, and how to
+  get started with this powerful language.'
+author: 'Erik Nguyen'
+date: '2024-09-14'
+---
+
+# SQL for Beginners: Your Gateway to Data Management
+
+SQL (Structured Query Language) is the standard language for managing and
+manipulating relational databases. Whether you're aspiring to become a data
+analyst, a web developer, or just someone who wants to understand how data is
+stored and retrieved, learning SQL is an invaluable skill. This blog post will
+introduce you to the basics of SQL and guide you through your first steps in
+working with databases.
+
+## Table of Contents
+
+1. [What is SQL?](#what-is-sql)
+2. [Getting Started: Setting Up Your Environment](#getting-started)
+3. [Basic SQL Commands](#basic-sql-commands)
+4. [Creating and Modifying Tables](#creating-and-modifying-tables)
+5. [Querying Data](#querying-data)
+6. [Joining Tables](#joining-tables)
+7. [Aggregate Functions](#aggregate-functions)
+8. [Practice Exercises](#practice-exercises)
+9. [Test Your SQL Knowledge](#test-your-sql-knowledge)
+10. [Next Steps](#next-steps)
+
+## What is SQL? <a id='what-is-sql'></a>
+
+SQL stands for Structured Query Language. It's a standard language for storing,
+manipulating, and retrieving data in databases. SQL is used by many relational
+database management systems (RDBMS) like MySQL, PostgreSQL, Oracle, and
+Microsoft SQL Server.
+
+<ExpandableSection title='Why Learn SQL?'>
+  - SQL is used in many industries and job roles - It allows you to work with
+  large datasets efficiently - SQL skills are in high demand in the job market -
+  It's a foundation for more advanced data analysis and management techniques
+</ExpandableSection>
+
+## Getting Started: Setting Up Your Environment <a id='getting-started'></a>
+
+For beginners, we recommend starting with SQLite, a lightweight, serverless
+database engine. You can use an online SQLite playground for this tutorial.
+
+Here's an example of creating a simple table and inserting some data:
+
+```sql
+-- This is a comment in SQL
+-- Create a simple table
+CREATE TABLE users (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT UNIQUE,
+  age INTEGER
+);
+
+-- Insert some data
+INSERT INTO users (name, email, age) VALUES ('Alice', 'alice@email.com', 28);
+INSERT INTO users (name, email, age) VALUES ('Bob', 'bob@email.com', 35);
+
+-- Verify our data
+SELECT * FROM users;
+```
+
+## Basic SQL Commands <a id='basic-sql-commands'></a>
+
+SQL commands fall into several categories. Here are some of the most common:
+
+1. DDL (Data Definition Language): CREATE, ALTER, DROP
+2. DML (Data Manipulation Language): INSERT, UPDATE, DELETE
+3. DQL (Data Query Language): SELECT
+4. DCL (Data Control Language): GRANT, REVOKE
+
+Let's focus on the basics for now.
+
+## Creating and Modifying Tables <a id='creating-and-modifying-tables'></a>
+
+To create a new table, we use the CREATE TABLE command:
+
+```sql
+CREATE TABLE products (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  price DECIMAL(10, 2),
+  category TEXT
+);
+```
+
+To add a new column to an existing table:
+
+```sql
+ALTER TABLE products ADD COLUMN stock INTEGER DEFAULT 0;
+```
+
+## Querying Data <a id='querying-data'></a>
+
+The SELECT statement is used to query data from a table:
+
+```sql
+-- Select all columns from the products table
+SELECT * FROM products;
+
+-- Select specific columns
+SELECT name, price FROM products;
+
+-- Use WHERE clause to filter results
+SELECT name, price FROM products WHERE category = 'Electronics';
+
+-- Order the results
+SELECT name, price FROM products ORDER BY price DESC;
+```
+
+## Joining Tables <a id='joining-tables'></a>
+
+Joins are used to combine rows from two or more tables based on a related column
+between them.
+
+```sql
+-- Create a new table for orders
+CREATE TABLE orders (
+  id INTEGER PRIMARY KEY,
+  user_id INTEGER,
+  product_id INTEGER,
+  quantity INTEGER,
+  order_date DATE,
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (product_id) REFERENCES products(id)
+);
+
+-- Insert some sample data
+INSERT INTO orders (user_id, product_id, quantity, order_date)
+VALUES (1, 1, 2, '2023-09-15');
+
+-- Join tables to get user name, product name, and order details
+SELECT u.name, p.name, o.quantity, o.order_date
+FROM orders o
+JOIN users u ON o.user_id = u.id
+JOIN products p ON o.product_id = p.id;
+```
+
+## Aggregate Functions <a id='aggregate-functions'></a>
+
+SQL provides several aggregate functions to perform calculations on a set of
+values:
+
+```sql
+-- Count the number of products
+SELECT COUNT(*) FROM products;
+
+-- Get the average price of products
+SELECT AVG(price) FROM products;
+
+-- Get the total revenue by category
+SELECT category, SUM(price * stock) as total_value
+FROM products
+GROUP BY category;
+```
+
+## Practice Exercises <a id='practice-exercises'></a>
+
+Now it's your turn! Try these exercises to reinforce what you've learned:
+
+1. Create a new table called 'employees' with columns for id, name, department,
+   and salary.
+2. Insert at least 5 records into the 'employees' table.
+3. Write a query to find the highest paid employee in each department.
+4. Join the 'employees' table with the 'orders' table to find out which employee
+   has processed the most orders.
+
+## Test Your SQL Knowledge <a id='test-your-sql-knowledge'></a>
+
+Before we wrap up, let's test your understanding of the SQL concepts we've
+covered with a quick quiz!
+
+<Quiz
+  questions={[
+    {
+      question: 'Which SQL command is used to retrieve data from a database?',
+      options: ['GET', 'FETCH', 'SELECT', 'RETRIEVE'],
+      correctAnswer: 2
+    },
+    {
+      question: 'What does SQL stand for?',
+      options: [
+        'Structured Query Language',
+        'Simple Question Language',
+        'Structured Question Language',
+        'Simple Query Language'
+      ],
+      correctAnswer: 0
+    },
+    {
+      question:
+        'Which clause is used to filter the results of a SELECT statement?',
+      options: ['FILTER', 'WHERE', 'HAVING', 'CONDITION'],
+      correctAnswer: 1
+    },
+    {
+      question: 'Which SQL command is used to add new data to a table?',
+      options: ['ADD', 'UPDATE', 'INSERT', 'PUSH'],
+      correctAnswer: 2
+    },
+    {
+      question: 'What is the purpose of the JOIN clause in SQL?',
+      options: [
+        'To combine rows from two or more tables',
+        'To split a table into multiple tables',
+        'To remove duplicate rows',
+        'To sort the results of a query'
+      ],
+      correctAnswer: 0
+    }
+  ]}
+/>
+
+How did you do? Remember, practice makes perfect when it comes to SQL!
+
+## Next Steps <a id='next-steps'></a>
+
+Congratulations on taking your first steps with SQL! Here are some suggestions
+for continuing your learning journey:
+
+1. Practice regularly with online SQL exercises and challenges.
+2. Learn about database design and normalization.
+3. Explore more advanced SQL concepts like subqueries, views, and stored
+   procedures.
+4. Try working with a full-fledged database system like PostgreSQL or MySQL.
+5. Apply your SQL skills to real-world datasets or personal projects.
+
+Remember, mastering SQL takes time and practice. Don't get discouraged if
+something doesn't click right away. Keep exploring, asking questions, and
+writing queries!
+
+Happy querying!
