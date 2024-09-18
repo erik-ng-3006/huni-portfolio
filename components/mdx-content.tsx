@@ -4,8 +4,16 @@ import { highlight } from 'sugar-high'
 import Counter from '@/components/counter'
 import Alert from './alert'
 import Quiz from './quiz'
-//import SchemaVisualizer from './schema-visualizer'
 import ExpandableSection from './expandable-section'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle
+} from '@/components/ui/card'
+//import SchemaVisualizer from './schema-visualizer'
 //import InteractiveCodeSnippet from './interactive-code-snippet'
 function Code({ children, ...props }: any) {
   let codeHTML = highlight(children)
@@ -17,8 +25,14 @@ const components = {
   Counter,
   Alert,
   Quiz,
+  ExpandableSection,
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle
   //SchemaVisualizer,
-  ExpandableSection
   //InteractiveCodeSnippet
 }
 
