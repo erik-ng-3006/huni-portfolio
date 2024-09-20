@@ -1,0 +1,197 @@
+---
+title: 'Advanced SQL Concepts: Mastering Database Optimization'
+summary:
+  'Learn advanced SQL techniques for optimizing database performance, including
+  window functions, CTEs, recursive queries, indexing strategies, and more.'
+date: '2024-09-20'
+author: 'Erik Nguyen'
+---
+
+# Advanced SQL Concepts: Mastering Database Optimization
+
+As data volumes grow and performance becomes critical, mastering advanced SQL
+concepts is essential for any database professional. This post delves into
+sophisticated techniques to optimize your queries and improve database
+performance.
+
+<Callout>
+  🚀 Advanced SQL techniques can significantly boost query performance,
+  sometimes turning hours-long operations into seconds.
+</Callout>
+
+## Table of Contents
+
+1. [Window Functions](#window-functions)
+2. [Common Table Expressions (CTEs)](#common-table-expressions)
+3. [Recursive Queries](#recursive-queries)
+4. [Indexing Strategies](#indexing-strategies)
+5. [Query Optimization Techniques](#query-optimization-techniques)
+6. [Partitioning](#partitioning)
+
+## 1. Window Functions <a id="window-functions"></a>
+
+Window functions perform calculations across a set of rows that are related to
+the current row. They're powerful tools for complex analytical queries.
+
+```sql
+SELECT
+    employee_name,
+    department,
+    salary,
+    AVG(salary) OVER (PARTITION BY department) as dept_avg_salary,
+    salary - AVG(salary) OVER (PARTITION BY department) as diff_from_avg
+FROM employees;
+```
+
+This query calculates each employee's salary difference from their department's
+average.
+
+## 2. Common Table Expressions <a id="common-table-expressions"></a>
+
+Common Table Expressions (CTEs) provide a way to write auxiliary statements to
+make complex queries more readable and maintainable.
+
+```sql
+WITH regional_sales AS (
+    SELECT region, SUM(amount) as total_sales
+    FROM orders
+    GROUP BY region
+),
+top_regions AS (
+    SELECT region
+    FROM regional_sales
+    WHERE total_sales > (SELECT SUM(total_sales)/10 FROM regional_sales)
+)
+SELECT region,
+       product,
+       SUM(quantity) as product_units,
+       SUM(amount) as product_sales
+FROM orders
+WHERE region IN (SELECT region FROM top_regions)
+GROUP BY region, product;
+```
+
+This query uses CTEs to find product sales in top-performing regions.
+
+## 3. Recursive Queries <a id="recursive-queries"></a>
+
+Recursive CTEs are powerful for working with hierarchical or graph-structured
+data.
+
+```sql
+WITH RECURSIVE subordinates AS (
+    SELECT employee_id, manager_id, full_name
+    FROM employees
+    WHERE employee_id = 1  -- Starting point
+    UNION ALL
+    SELECT e.employee_id, e.manager_id, e.full_name
+    FROM employees e
+    INNER JOIN subordinates s ON s.employee_id = e.manager_id
+)
+SELECT * FROM subordinates;
+```
+
+This query retrieves all subordinates in an organizational hierarchy.
+
+## 4. Indexing Strategies <a id="indexing-strategies"></a>
+
+Proper indexing is crucial for query performance. Here are some advanced
+indexing concepts:
+
+<Card>
+  <CardHeader>
+    <CardTitle>Advanced Indexing Techniques</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <ul>
+      <li>Covering Indexes: Include all columns referenced in a query</li>
+      <li>Partial Indexes: Index only a subset of rows</li>
+      <li>Composite Indexes: Multiple columns in a single index</li>
+      <li>Function-Based Indexes: Index results of functions</li>
+    </ul>
+  </CardContent>
+</Card>
+
+Example of a partial index:
+
+```sql
+CREATE INDEX idx_active_users ON users (last_login)
+WHERE status = 'active';
+```
+
+## 5. Query Optimization Techniques <a id="query-optimization-techniques"></a>
+
+Understanding the query execution plan is key to optimization. Here are some
+techniques:
+
+<Card>
+  <CardHeader>
+    <CardTitle>Key Optimization Strategies</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <ol>
+      <li>
+        <strong>Avoid SELECT *</strong>: Only select needed columns.
+      </li>
+      <li>
+        <strong>Use JOINs wisely</strong>: Ensure proper join conditions and
+        order.
+      </li>
+      <li>
+        <strong>Subquery optimization</strong>: Sometimes, JOINs perform better
+        than subqueries.
+      </li>
+      <li>
+        <strong>EXPLAIN ANALYZE</strong>: Use this to understand query
+        execution.
+      </li>
+    </ol>
+  </CardContent>
+</Card>
+
+<Alert style={{ marginTop: '2rem' }}>
+  <AlertTitle>Performance Tip</AlertTitle>
+  <AlertDescription>
+    Always test optimizations with real data volumes. What works for small
+    datasets might not scale well.
+  </AlertDescription>
+</Alert>
+
+## 6. Partitioning <a id="partitioning"></a>
+
+Partitioning large tables can significantly improve query performance and
+manageability.
+
+```sql
+CREATE TABLE sales (
+    sale_date DATE,
+    amount DECIMAL(10,2)
+) PARTITION BY RANGE (EXTRACT(YEAR FROM sale_date));
+
+CREATE TABLE sales_2023 PARTITION OF sales
+    FOR VALUES FROM (2023) TO (2024);
+
+CREATE TABLE sales_2024 PARTITION OF sales
+    FOR VALUES FROM (2024) TO (2025);
+```
+
+This example partitions a sales table by year, allowing for faster queries on
+specific date ranges.
+
+## Conclusion <a id="conclusion"></a>
+
+Mastering these advanced SQL concepts can dramatically improve your database
+performance and capabilities. Remember, optimization is an iterative process –
+always measure, analyze, and refine your approach.
+
+<Callout>
+  💡 For further exploration, consider diving into materialized views, query
+  parallelization, and database-specific optimization features.
+</Callout>
+
+export const metadata = {
+  title: 'Advanced SQL Concepts: Mastering Database Optimization',
+  description: 'Learn advanced SQL techniques for optimizing database performance, including window functions, CTEs, recursive queries, indexing strategies, and more.',
+  keywords: ['SQL', 'Database Optimization', 'Window Functions', 'CTEs', 'Indexing', 'Query Optimization', 'Partitioning'],
+
+}
