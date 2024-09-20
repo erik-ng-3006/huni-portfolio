@@ -2,9 +2,10 @@ import { MDXRemote, MDXRemoteProps } from 'next-mdx-remote/rsc'
 import React, { JSX } from 'react'
 import { highlight } from 'sugar-high'
 import Counter from '@/components/counter'
-import Alert from './alert'
+import Callout from './callout'
 import Quiz from './quiz'
 import ExpandableSection from './expandable-section'
+import { Alert, AlertDescription, AlertTitle } from './ui/alert'
 import {
   Card,
   CardContent,
@@ -13,8 +14,7 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card'
-//import SchemaVisualizer from './schema-visualizer'
-//import InteractiveCodeSnippet from './interactive-code-snippet'
+
 function Code({ children, ...props }: any) {
   let codeHTML = highlight(children)
   return <code dangerouslySetInnerHTML={{ __html: codeHTML }} {...props} />
@@ -23,7 +23,7 @@ function Code({ children, ...props }: any) {
 const components = {
   code: Code,
   Counter,
-  Alert,
+  Callout,
   Quiz,
   ExpandableSection,
   Card,
@@ -31,9 +31,10 @@ const components = {
   CardDescription,
   CardFooter,
   CardHeader,
-  CardTitle
-  //SchemaVisualizer,
-  //InteractiveCodeSnippet
+  CardTitle,
+  Alert,
+  AlertDescription,
+  AlertTitle
 }
 
 const MDXContent = (props: JSX.IntrinsicAttributes & MDXRemoteProps) => {

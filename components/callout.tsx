@@ -6,15 +6,15 @@ import {
   CrossCircledIcon
 } from '@radix-ui/react-icons'
 
-type AlertType = 'info' | 'success' | 'warning' | 'error'
+type CalloutType = 'info' | 'success' | 'warning' | 'error'
 
-interface AlertProps {
-  type?: AlertType
+interface CalloutProps {
+  type?: CalloutType
   children: React.ReactNode
 }
 
-const Alert: React.FC<AlertProps> = ({ type = 'info', children }) => {
-  const getAlertStyle = (): string => {
+const Callout: React.FC<CalloutProps> = ({ type = 'info', children }) => {
+  const getCalloutStyle = (): string => {
     switch (type) {
       case 'success':
         return 'bg-green-100 border-green-500 text-green-700'
@@ -41,7 +41,7 @@ const Alert: React.FC<AlertProps> = ({ type = 'info', children }) => {
   }
 
   return (
-    <div className={`mb-4 border-l-4 p-4 ${getAlertStyle()}`} role='alert'>
+    <div className={`mb-4 border-l-4 p-4 ${getCalloutStyle()}`} role='callout'>
       <div className='flex items-center'>
         {getIcon()}
         <div>{children}</div>
@@ -50,4 +50,4 @@ const Alert: React.FC<AlertProps> = ({ type = 'info', children }) => {
   )
 }
 
-export default Alert
+export default Callout
