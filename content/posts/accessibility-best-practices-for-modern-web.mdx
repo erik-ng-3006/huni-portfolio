@@ -1,0 +1,156 @@
+---
+title: 'Accessibility Best Practices for Modern Web Apps'
+summary:
+  'A comprehensive guide to implementing accessibility features in contemporary
+  web applications, ensuring inclusive user experiences for all.'
+date: '2024-09-27'
+author: 'Erik Nguyen'
+---
+
+# Accessibility Best Practices for Modern Web Apps
+
+In today's digital landscape, creating accessible web applications is not just a
+nice-to-have feature—it's a necessity. Accessibility ensures that your web app
+can be used by everyone, regardless of their abilities or the devices they use.
+This post will guide you through key accessibility best practices for modern web
+applications.
+
+## Why Accessibility Matters
+
+Before we dive into the practices, let's understand why accessibility is
+crucial:
+
+1. **Inclusivity**: It allows everyone, including people with disabilities, to
+   use your application.
+2. **Legal Compliance**: Many countries have laws requiring digital
+   accessibility.
+3. **SEO Benefits**: Accessible websites often rank higher in search results.
+4. **Improved User Experience**: Features that make a site accessible often
+   improve usability for all users.
+
+## 1. Semantic HTML: The Foundation of Accessibility
+
+Using semantic HTML elements is crucial for creating an accessible structure:
+
+- Use `<header>`, `<nav>`, `<main>`, `<article>`, `<aside>`, and `<footer>` to
+  define page structure.
+- Employ heading tags (`<h1>` to `<h6>`) in a logical hierarchy.
+- Utilize `<button>` for interactive elements and `<a>` for links.
+
+```jsx
+<header>
+  <nav>{/* Navigation items */}</nav>
+</header>
+<main>
+  <article>
+    <h1>Main Content Heading</h1>
+    {/* Article content */}
+  </article>
+  <aside>{/* Sidebar content */}</aside>
+</main>
+<footer>{/* Footer content */}</footer>
+```
+
+## 2. Keyboard Navigation
+
+Ensure all interactive elements are keyboard accessible:
+
+- Use `tabindex="0"` to make custom elements focusable.
+- Implement focus styles for better visibility.
+- Create logical tab order.
+
+```css
+/* Example focus styles */
+:focus {
+  outline: 2px solid #4a90e2;
+  box-shadow: 0 0 3px #4a90e2;
+}
+```
+
+## 3. ARIA Attributes
+
+Enhance semantics with ARIA (Accessible Rich Internet Applications) attributes:
+
+- Use `aria-label` for elements without visible text.
+- Employ `aria-hidden="true"` for decorative elements.
+- Implement `aria-expanded` for toggleable components.
+
+```jsx
+<button aria-label='Close dialog' onClick={closeDialog}>
+  <span aria-hidden='true'>&times;</span>
+</button>
+```
+
+## 4. Color Contrast and Text Readability
+
+Ensure sufficient color contrast and readable text:
+
+- Aim for a contrast ratio of at least 4.5:1 for normal text.
+- Use relative units (em, rem) for font sizes.
+- Avoid conveying information through color alone.
+
+```css
+body {
+  font-size: 16px;
+  line-height: 1.5;
+  color: #333;
+  background-color: #fff;
+}
+```
+
+## 5. Alternative Text for Images
+
+Provide descriptive alt text for images:
+
+- Use the `alt` attribute for all meaningful images.
+- Leave `alt=""` for decorative images.
+
+```jsx
+<img src='graph.png' alt='Bar graph showing sales increase of 25% in Q3 2024' />
+```
+
+## 6. Form Accessibility
+
+Create accessible forms:
+
+- Associate labels with form controls using `for` attribute.
+- Group related form elements with `<fieldset>` and `<legend>`.
+- Provide clear error messages and instructions.
+
+```jsx
+<form>
+  <fieldset>
+    <legend>Contact Information</legend>
+    <label for='name'>Name:</label>
+    <input type='text' id='name' name='name' required />
+    {/* More form fields */}
+  </fieldset>
+</form>
+```
+
+## 7. Responsive Design
+
+Implement responsive design for various devices and screen sizes:
+
+- Use flexible layouts and relative units.
+- Ensure touch targets are large enough (at least 44x44 pixels).
+- Test with different zoom levels and orientations.
+
+```css
+.button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.5em 1em;
+}
+```
+
+## Conclusion
+
+Implementing these accessibility best practices will significantly improve the
+usability of your web application for all users. Remember, accessibility is an
+ongoing process—regularly test your app with various assistive technologies and
+gather feedback from users with disabilities to continually enhance the
+experience.
+
+By prioritizing accessibility, you're not just complying with standards; you're
+creating a more inclusive digital world that benefits everyone.
