@@ -30,15 +30,15 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
 
-    --sh-identifier: #354150;
-    --sh-keyword: #f47067;
-    --sh-string: #00a99a;
-    --sh-class: #8d85ff;
-    --sh-property: #4e8fdf;
-    --sh-entity: #6eafad;
-    --sh-jsxliterals: #bf7db6;
-    --sh-sign: #8996a3;
-    --sh-comment: #a19595;
+    --sh-identifier: #2a4b8d;
+    --sh-keyword: #d73a49;
+    --sh-string: #008000;
+    --sh-class: #6f42c1;
+    --sh-property: #005cc5;
+    --sh-entity: #22863a;
+    --sh-jsxliterals: #6f42c1;
+    --sh-sign: #5c6370;
+    --sh-comment: #6a737d;
   }
 
   .dark {
@@ -67,10 +67,15 @@
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
 
-    --sh-identifier: white;
-    --sh-keyword: #f47067;
-    --sh-string: #0fa295;
-    --sh-class: #4c97f8;
+    --sh-identifier: #61afef;
+    --sh-keyword: #c678dd;
+    --sh-string: #98c379;
+    --sh-class: #e5c07b;
+    --sh-property: #56b6c2;
+    --sh-entity: #98c379;
+    --sh-jsxliterals: #d19a66;
+    --sh-sign: #abb2bf;
+    --sh-comment: #7f848e;
   }
 }
 
