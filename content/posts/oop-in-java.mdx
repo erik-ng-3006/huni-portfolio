@@ -1,0 +1,261 @@
+---
+title: 'The Four Pillars of OOP in Java: A Comprehensive Guide'
+summary:
+  'Explore the fundamental principles of Object-Oriented Programming in Java:
+  encapsulation, inheritance, polymorphism, and abstraction. Learn how to
+  implement these concepts with practical examples.'
+author: 'Erik Nguyen'
+date: '2024-10-04'
+---
+
+# The Four Pillars of OOP in Java: A Comprehensive Guide
+
+Object-Oriented Programming (OOP) is a programming paradigm that forms the
+backbone of Java. At its core, OOP in Java is built upon four fundamental
+principles, often referred to as the "four pillars." In this comprehensive
+guide, we'll explore each of these pillars - encapsulation, inheritance,
+polymorphism, and abstraction - with practical Java examples.
+
+## 1. Encapsulation
+
+Encapsulation is the bundling of data and the methods that operate on that data
+within a single unit or object. It restricts direct access to some of an
+object's components, which is a means of preventing accidental interference and
+misuse of the methods and data.
+
+### Example:
+
+```java
+public class BankAccount {
+    private double balance;  // private field
+
+    public void deposit(double amount) {
+        if (amount > 0) {
+            balance += amount;
+        }
+    }
+
+    public void withdraw(double amount) {
+        if (amount > 0 && amount <= balance) {
+            balance -= amount;
+        }
+    }
+
+    public double getBalance() {
+        return balance;
+    }
+}
+```
+
+In this example, the `balance` field is private, and can only be accessed or
+modified through the public methods `deposit()`, `withdraw()`, and
+`getBalance()`. This ensures that the balance can't be modified directly,
+maintaining the integrity of the account data.
+
+## 2. Inheritance
+
+Inheritance is a mechanism that allows a new class to be based on an existing
+class. The new class inherits fields and methods from the existing class,
+promoting code reuse and establishing a relationship between the parent class
+and the child class.
+
+### Example:
+
+```java
+public class Animal {
+    protected String name;
+
+    public void eat() {
+        System.out.println(name + " is eating.");
+    }
+}
+
+public class Dog extends Animal {
+    public Dog(String name) {
+        this.name = name;
+    }
+
+    public void bark() {
+        System.out.println(name + " is barking.");
+    }
+}
+```
+
+Here, `Dog` is a subclass of `Animal`. It inherits the `name` field and `eat()`
+method from `Animal`, and adds its own `bark()` method.
+
+## 3. Polymorphism
+
+Polymorphism allows objects of different types to be treated as objects of a
+common super class. It can take the form of method overloading (compile-time
+polymorphism) or method overriding (runtime polymorphism).
+
+### Example:
+
+```java
+public class Shape {
+    public double getArea() {
+        return 0;
+    }
+}
+
+public class Circle extends Shape {
+    private double radius;
+
+    public Circle(double radius) {
+        this.radius = radius;
+    }
+
+    @Override
+    public double getArea() {
+        return Math.PI * radius * radius;
+    }
+}
+
+public class Rectangle extends Shape {
+    private double width;
+    private double height;
+
+    public Rectangle(double width, double height) {
+        this.width = width;
+        this.height = height;
+    }
+
+    @Override
+    public double getArea() {
+        return width * height;
+    }
+}
+```
+
+In this example, both `Circle` and `Rectangle` override the `getArea()` method
+from the `Shape` class. We can use polymorphism like this:
+
+```java
+Shape shape1 = new Circle(5);
+Shape shape2 = new Rectangle(4, 5);
+
+System.out.println(shape1.getArea());  // Calls Circle's getArea()
+System.out.println(shape2.getArea());  // Calls Rectangle's getArea()
+```
+
+## 4. Abstraction
+
+Abstraction is the process of hiding the implementation details and showing only
+the functionality to the user. It can be achieved with abstract classes and
+interfaces.
+
+### Example using an abstract class:
+
+```java
+public abstract class Vehicle {
+    protected String model;
+
+    public Vehicle(String model) {
+        this.model = model;
+    }
+
+    public abstract void move();
+}
+
+public class Car extends Vehicle {
+    public Car(String model) {
+        super(model);
+    }
+
+    @Override
+    public void move() {
+        System.out.println(model + " is driving on the road.");
+    }
+}
+
+public class Boat extends Vehicle {
+    public Boat(String model) {
+        super(model);
+    }
+
+    @Override
+    public void move() {
+        System.out.println(model + " is sailing on the water.");
+    }
+}
+```
+
+In this example, `Vehicle` is an abstract class that defines a common structure
+for all vehicles but leaves the implementation of the `move()` method to its
+subclasses.
+
+### Example using an interface:
+
+```java
+public interface Drawable {
+    void draw();
+}
+
+public class Circle implements Drawable {
+    @Override
+    public void draw() {
+        System.out.println("Drawing a circle");
+    }
+}
+
+public class Square implements Drawable {
+    @Override
+    public void draw() {
+        System.out.println("Drawing a square");
+    }
+}
+```
+
+Here, the `Drawable` interface defines a contract that all implementing classes
+must fulfill, providing a high level of abstraction.
+
+## Test Your Knowledge
+
+Now that we've covered the four pillars of OOP in Java, let's test your
+understanding with a quick quiz!
+
+<Quiz
+  questions={[
+    {
+      question:
+        'Which OOP principle is demonstrated by making class variables private and providing public getter and setter methods?',
+      options: ['Inheritance', 'Polymorphism', 'Encapsulation', 'Abstraction'],
+      correctAnswer: 2
+    },
+    {
+      question: 'In Java, which keyword is used to inherit from a class?',
+      options: ['implements', 'extends', 'inherits', 'super'],
+      correctAnswer: 1
+    },
+    {
+      question:
+        'Which OOP principle allows a subclass to provide a specific implementation of a method that is already defined in its superclass?',
+      options: ['Encapsulation', 'Inheritance', 'Abstraction', 'Polymorphism'],
+      correctAnswer: 3
+    },
+    {
+      question:
+        'Which of the following is NOT a way to achieve abstraction in Java?',
+      options: [
+        'Abstract classes',
+        'Interfaces',
+        'Private methods',
+        'Static methods'
+      ],
+      correctAnswer: 3
+    }
+  ]}
+/>
+
+## Conclusion
+
+Understanding and effectively utilizing these four pillars of OOP -
+encapsulation, inheritance, polymorphism, and abstraction - is crucial for
+writing robust, maintainable, and efficient Java code. Each principle
+contributes to creating a well-structured object-oriented design, allowing for
+code reuse, flexibility, and easier management of complex systems.
+
+As you continue your journey in Java programming, keep these principles in mind.
+Practice implementing them in your projects, and you'll soon find yourself
+writing more elegant and powerful Java applications.
