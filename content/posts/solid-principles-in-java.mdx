@@ -1,0 +1,281 @@
+---
+title: 'SOLID Principles in Java: Writing Maintainable OOP Code'
+summary:
+  'Learn how to apply SOLID principles in Java to create more maintainable,
+  flexible, and scalable object-oriented code. This guide covers each principle
+  with practical Java examples, tips for implementation, and highlighted key
+  points using callouts.'
+author: 'Erik Nguyen'
+date: '2024-10-06'
+---
+
+# SOLID Principles in Java: Writing Maintainable OOP Code
+
+In the world of object-oriented programming, SOLID is an acronym for five design
+principles that help developers create more maintainable, flexible, and scalable
+software. These principles, when applied to Java code, can significantly improve
+its quality and longevity. Let's dive into each principle and see how we can
+implement them in Java.
+
+<Callout type='info'>
+  SOLID principles are guidelines, not strict rules. Apply them judiciously
+  based on your project's specific needs and context.
+</Callout>
+
+## S - Single Responsibility Principle (SRP)
+
+The Single Responsibility Principle states that a class should have only one
+reason to change. In other words, a class should have only one job or
+responsibility.
+
+### Example:
+
+```java
+// Bad: Class has multiple responsibilities
+class Employee {
+    public void calculatePay() { /* ... */ }
+    public void saveEmployee() { /* ... */ }
+    public void generateReport() { /* ... */ }
+}
+
+// Good: Each class has a single responsibility
+class Employee {
+    private String name;
+    private double salary;
+    // getters and setters
+}
+
+class PayrollCalculator {
+    public double calculatePay(Employee employee) { /* ... */ }
+}
+
+class EmployeeRepository {
+    public void saveEmployee(Employee employee) { /* ... */ }
+}
+
+class ReportGenerator {
+    public void generateReport(Employee employee) { /* ... */ }
+}
+```
+
+<Callout type='success'>
+  By separating concerns into different classes, we make our code more modular
+  and easier to maintain. Each class now has a clear, single purpose.
+</Callout>
+
+## O - Open-Closed Principle (OCP)
+
+The Open-Closed Principle states that software entities (classes, modules,
+functions, etc.) should be open for extension but closed for modification.
+
+### Example:
+
+```java
+// Bad: Violates OCP
+class Rectangle {
+    protected double width;
+    protected double height;
+    // getters and setters
+}
+
+class AreaCalculator {
+    public double calculateArea(Rectangle rectangle) {
+        return rectangle.getWidth() * rectangle.getHeight();
+    }
+}
+
+// Good: Follows OCP
+interface Shape {
+    double calculateArea();
+}
+
+class Rectangle implements Shape {
+    private double width;
+    private double height;
+
+    @Override
+    public double calculateArea() {
+        return width * height;
+    }
+}
+
+class Circle implements Shape {
+    private double radius;
+
+    @Override
+    public double calculateArea() {
+        return Math.PI * radius * radius;
+    }
+}
+```
+
+<Callout type='warning'>
+  When adding new functionality, strive to extend existing code rather than
+  modifying it. This helps prevent unexpected side effects in parts of your
+  application that rely on the existing code.
+</Callout>
+
+## L - Liskov Substitution Principle (LSP)
+
+The Liskov Substitution Principle states that objects of a superclass should be
+replaceable with objects of its subclasses without affecting the correctness of
+the program.
+
+### Example:
+
+```java
+// Bad: Violates LSP
+class Bird {
+    public void fly() { /* ... */ }
+}
+
+class Ostrich extends Bird {
+    @Override
+    public void fly() {
+        throw new UnsupportedOperationException("Ostriches can't fly");
+    }
+}
+
+// Good: Follows LSP
+interface FlyingBird {
+    void fly();
+}
+
+class Sparrow implements FlyingBird {
+    @Override
+    public void fly() { /* ... */ }
+}
+
+class Ostrich { // Not a FlyingBird
+    public void run() { /* ... */ }
+}
+```
+
+<Callout type='error'>
+  Violating LSP can lead to unexpected behavior and runtime errors. Always
+  ensure that subclasses can fully substitute their parent classes without
+  breaking the expected behavior.
+</Callout>
+
+## I - Interface Segregation Principle (ISP)
+
+The Interface Segregation Principle states that clients should not be forced to
+depend on interfaces they do not use.
+
+### Example:
+
+```java
+// Bad: Interface too broad
+interface Worker {
+    void work();
+    void eat();
+    void sleep();
+}
+
+// Good: Segregated interfaces
+interface Workable {
+    void work();
+}
+
+interface Eatable {
+    void eat();
+}
+
+interface Sleepable {
+    void sleep();
+}
+
+class HumanWorker implements Workable, Eatable, Sleepable {
+    @Override
+    public void work() { /* ... */ }
+    @Override
+    public void eat() { /* ... */ }
+    @Override
+    public void sleep() { /* ... */ }
+}
+
+class RobotWorker implements Workable {
+    @Override
+    public void work() { /* ... */ }
+}
+```
+
+<Callout type='info'>
+  By segregating interfaces, we create more flexible and reusable code. Clients
+  can implement only the interfaces they need, reducing unnecessary
+  dependencies.
+</Callout>
+
+## D - Dependency Inversion Principle (DIP)
+
+The Dependency Inversion Principle states that high-level modules should not
+depend on low-level modules. Both should depend on abstractions. Abstractions
+should not depend on details. Details should depend on abstractions.
+
+### Example:
+
+```java
+// Bad: High-level module depends on low-level module
+class EmailSender {
+    public void send(String message) { /* ... */ }
+}
+
+class NotificationService {
+    private EmailSender emailSender = new EmailSender();
+
+    public void sendNotification(String message) {
+        emailSender.send(message);
+    }
+}
+
+// Good: Both depend on abstraction
+interface MessageSender {
+    void send(String message);
+}
+
+class EmailSender implements MessageSender {
+    @Override
+    public void send(String message) { /* ... */ }
+}
+
+class SMSSender implements MessageSender {
+    @Override
+    public void send(String message) { /* ... */ }
+}
+
+class NotificationService {
+    private MessageSender messageSender;
+
+    public NotificationService(MessageSender messageSender) {
+        this.messageSender = messageSender;
+    }
+
+    public void sendNotification(String message) {
+        messageSender.send(message);
+    }
+}
+```
+
+<Callout type='success'>
+  DIP promotes loose coupling between modules, making your system more flexible
+  and easier to change. It's a key principle in achieving modular design.
+</Callout>
+
+## Conclusion
+
+Applying SOLID principles in your Java code can lead to more maintainable,
+flexible, and scalable applications. These principles encourage writing clean
+code that's easier to understand, test, and extend. Remember, while these
+principles are important, they should be applied judiciously. Over-engineering
+can lead to unnecessary complexity, so always consider the specific needs and
+context of your project when applying these principles.
+
+<Callout type='warning'>
+  While SOLID principles are powerful tools for improving code quality, be
+  cautious of over-applying them. Sometimes, simpler solutions might be more
+  appropriate for your specific use case.
+</Callout>
+
+As you continue to develop in Java, keep these principles in mind and practice
+applying them in your projects. Over time, you'll find that your code becomes
+more robust and easier to maintain, saving time and effort in the long run.
