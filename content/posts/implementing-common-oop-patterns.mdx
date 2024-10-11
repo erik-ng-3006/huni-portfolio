@@ -1,0 +1,315 @@
+---
+title: 'Design Patterns in Java: Implementing Common OOP Patterns'
+summary:
+  'Explore essential object-oriented design patterns in Java, including
+  Singleton, Factory, Observer, and Strategy. Learn how to implement these
+  patterns with practical examples and understand their benefits and use cases.'
+author: 'Erik Nguyen'
+date: '2024-10-10'
+---
+
+# Design Patterns in Java: Implementing Common OOP Patterns
+
+Design patterns are tried-and-tested solutions to common problems in software
+design. They provide templates for solving issues that occur frequently in
+software development, making your code more flexible, reusable, and
+maintainable. In this post, we'll explore some of the most common
+object-oriented design patterns and how to implement them in Java.
+
+<Callout type='info'>
+  Design patterns are not code snippets that can be directly copied and pasted.
+  They are general concepts that need to be adapted to your specific use case.
+</Callout>
+
+## 1. Singleton Pattern
+
+The Singleton pattern ensures that a class has only one instance and provides a
+global point of access to that instance.
+
+### Implementation:
+
+```java
+public class Singleton {
+    private static Singleton instance;
+
+    private Singleton() {}
+
+    public static synchronized Singleton getInstance() {
+        if (instance == null) {
+            instance = new Singleton();
+        }
+        return instance;
+    }
+}
+```
+
+<Callout type='warning'>
+  While Singleton is a commonly used pattern, it can make unit testing more
+  difficult and is sometimes considered an anti-pattern. Use it judiciously.
+</Callout>
+
+## 2. Factory Pattern
+
+The Factory pattern provides an interface for creating objects in a superclass,
+allowing subclasses to decide which class to instantiate.
+
+### Implementation:
+
+```java
+interface Animal {
+    void makeSound();
+}
+
+class Dog implements Animal {
+    public void makeSound() {
+        System.out.println("Woof");
+    }
+}
+
+class Cat implements Animal {
+    public void makeSound() {
+        System.out.println("Meow");
+    }
+}
+
+class AnimalFactory {
+    public Animal createAnimal(String animalType) {
+        if (animalType.equalsIgnoreCase("dog")) {
+            return new Dog();
+        } else if (animalType.equalsIgnoreCase("cat")) {
+            return new Cat();
+        }
+        return null;
+    }
+}
+```
+
+<Callout type='success'>
+  The Factory pattern promotes loose coupling by eliminating the need to bind
+  application-specific classes into your code.
+</Callout>
+
+## 3. Observer Pattern
+
+The Observer pattern defines a one-to-many dependency between objects so that
+when one object changes state, all its dependents are notified and updated
+automatically.
+
+### Implementation:
+
+```java
+import java.util.ArrayList;
+import java.util.List;
+
+interface Observer {
+    void update(String message);
+}
+
+class Subject {
+    private List<Observer> observers = new ArrayList<>();
+
+    public void attach(Observer observer) {
+        observers.add(observer);
+    }
+
+    public void notifyAllObservers(String message) {
+        for (Observer observer : observers) {
+            observer.update(message);
+        }
+    }
+}
+
+class ConcreteObserver implements Observer {
+    private String name;
+
+    public ConcreteObserver(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public void update(String message) {
+        System.out.println(name + " received message: " + message);
+    }
+}
+```
+
+<Callout type='info'>
+  The Observer pattern is widely used in event handling systems and is the basis
+  for the Model-View-Controller (MVC) architectural pattern.
+</Callout>
+
+## 4. Strategy Pattern
+
+The Strategy pattern defines a family of algorithms, encapsulates each one, and
+makes them interchangeable. It lets the algorithm vary independently from
+clients that use it.
+
+### Implementation:
+
+```java
+interface PaymentStrategy {
+    void pay(int amount);
+}
+
+class CreditCardPayment implements PaymentStrategy {
+    private String name;
+    private String cardNumber;
+
+    public CreditCardPayment(String name, String cardNumber) {
+        this.name = name;
+        this.cardNumber = cardNumber;
+    }
+
+    @Override
+    public void pay(int amount) {
+        System.out.println(amount + " paid with credit card");
+    }
+}
+
+class PayPalPayment implements PaymentStrategy {
+    private String emailId;
+
+    public PayPalPayment(String emailId) {
+        this.emailId = emailId;
+    }
+
+    @Override
+    public void pay(int amount) {
+        System.out.println(amount + " paid using PayPal");
+    }
+}
+
+class ShoppingCart {
+    private PaymentStrategy paymentStrategy;
+
+    public void setPaymentStrategy(PaymentStrategy paymentStrategy) {
+        this.paymentStrategy = paymentStrategy;
+    }
+
+    public void checkout(int amount) {
+        paymentStrategy.pay(amount);
+    }
+}
+```
+
+<Callout type='success'>
+  The Strategy pattern allows you to switch between algorithms or strategies at
+  runtime, providing great flexibility in your code.
+</Callout>
+
+## 5. Decorator Pattern
+
+The Decorator pattern allows behavior to be added to an individual object,
+either statically or dynamically, without affecting the behavior of other
+objects from the same class.
+
+### Implementation:
+
+```java
+interface Coffee {
+    double getCost();
+    String getDescription();
+}
+
+class SimpleCoffee implements Coffee {
+    @Override
+    public double getCost() {
+        return 1;
+    }
+
+    @Override
+    public String getDescription() {
+        return "Simple coffee";
+    }
+}
+
+abstract class CoffeeDecorator implements Coffee {
+    protected Coffee decoratedCoffee;
+
+    public CoffeeDecorator(Coffee coffee) {
+        this.decoratedCoffee = coffee;
+    }
+
+    public double getCost() {
+        return decoratedCoffee.getCost();
+    }
+
+    public String getDescription() {
+        return decoratedCoffee.getDescription();
+    }
+}
+
+class Milk extends CoffeeDecorator {
+    public Milk(Coffee coffee) {
+        super(coffee);
+    }
+
+    @Override
+    public double getCost() {
+        return super.getCost() + 0.5;
+    }
+
+    @Override
+    public String getDescription() {
+        return super.getDescription() + ", milk";
+    }
+}
+
+class Sugar extends CoffeeDecorator {
+    public Sugar(Coffee coffee) {
+        super(coffee);
+    }
+
+    @Override
+    public double getCost() {
+        return super.getCost() + 0.2;
+    }
+
+    @Override
+    public String getDescription() {
+        return super.getDescription() + ", sugar";
+    }
+}
+```
+
+<Callout type='info'>
+  The Decorator pattern is particularly useful for adhering to the Single
+  Responsibility Principle, as it allows functionality to be divided between
+  classes with unique areas of concern.
+</Callout>
+
+## Best Practices for Using Design Patterns
+
+1. **Understand the Problem**: Before applying a design pattern, make sure you
+   fully understand the problem you're trying to solve.
+
+2. **Don't Force It**: Use design patterns only when they provide a clear
+   benefit. Overuse can lead to unnecessary complexity.
+
+3. **Combine Patterns**: Often, the best solutions involve combining multiple
+   design patterns.
+
+4. **Keep It Simple**: Start with the simplest solution. Introduce patterns only
+   when you need the flexibility they provide.
+
+<Callout type='warning'>
+  Remember that design patterns are tools, not rules. They should be used to
+  solve problems, not to show off coding skills.
+</Callout>
+
+## Conclusion
+
+Design patterns are powerful tools in a Java developer's toolkit. They provide
+tested solutions to common problems in software design, promoting code reuse,
+extensibility, and maintainability. By understanding and correctly implementing
+these patterns, you can create more robust and flexible Java applications.
+
+As you continue your journey in Java development, take the time to learn and
+practice these and other design patterns. Remember, the key is not just to know
+the patterns, but to understand when and how to apply them effectively in your
+projects.
+
+<Callout type='success'>
+  Mastering design patterns will elevate your skills as a Java developer,
+  enabling you to create more elegant, efficient, and maintainable code.
+</Callout>
