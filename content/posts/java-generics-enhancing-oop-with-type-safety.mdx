@@ -1,0 +1,114 @@
+---
+title: 'Java Generics: Enhancing OOP with Type Safety'
+summary:
+  'Explore how Java Generics improve type safety and code reusability in
+  object-oriented programming, with practical examples and best practices.'
+author: 'Erik Nguyen'
+date: '2024-10-16'
+---
+
+# Java Generics: Enhancing OOP with Type Safety
+
+Java Generics, introduced in Java 5, have revolutionized the way we write
+type-safe and reusable code in object-oriented programming. In this post, we'll
+explore the benefits of generics and how they can improve your Java
+applications.
+
+## What are Generics?
+
+Generics allow you to write classes, interfaces, and methods that can work with
+different types while providing compile-time type safety. They enable you to
+create reusable code that can operate on objects of various types without
+sacrificing type safety.
+
+<Callout type='info'>
+  Generics provide compile-time type checking, which helps catch type-related
+  errors early in the development process, reducing runtime errors and improving
+  overall code quality.
+</Callout>
+
+## Benefits of Using Generics
+
+1. **Type Safety**: Generics ensure that you're using the correct types at
+   compile-time, preventing ClassCastExceptions at runtime.
+
+2. **Code Reusability**: With generics, you can write a single class or method
+   that works with different types, reducing code duplication.
+
+3. **Improved Readability**: Generics make the intention of your code clearer,
+   as the type information is explicitly stated.
+
+4. **Enhanced Performance**: By avoiding runtime type checking and casting,
+   generics can lead to more efficient code execution.
+
+## Basic Syntax
+
+Here's a simple example of a generic class:
+
+```java
+public class Box<T> {
+    private T content;
+
+    public void set(T content) {
+        this.content = content;
+    }
+
+    public T get() {
+        return content;
+    }
+}
+```
+
+In this example, `T` is a type parameter that can be replaced with any object
+type when the `Box` class is instantiated.
+
+## Using Generics in Practice
+
+Let's look at a more practical example of how generics can improve your code:
+
+```java
+public class Pair<K, V> {
+    private K key;
+    private V value;
+
+    public Pair(K key, V value) {
+        this.key = key;
+        this.value = value;
+    }
+
+    public K getKey() { return key; }
+    public V getValue() { return value; }
+}
+
+// Usage
+Pair<String, Integer> pair = new Pair<>("Age", 30);
+String key = pair.getKey();    // "Age"
+int value = pair.getValue();   // 30
+```
+
+This `Pair` class can be used with any combination of types, making it highly
+reusable while maintaining type safety.
+
+<Callout type='warning'>
+  When using generics, be mindful of type erasure. The type information is
+  removed at runtime, which can lead to unexpected behavior if not properly
+  understood and handled.
+</Callout>
+
+## Best Practices
+
+1. Use meaningful names for type parameters (e.g., `T` for type, `E` for
+   element, `K` for key, `V` for value).
+2. Prefer generic methods over raw types to maintain type safety.
+3. Use bounded type parameters when you need to restrict the types that can be
+   used with your generic class or method.
+4. Be aware of the limitations of generics, such as the inability to create
+   arrays of parameterized types.
+
+## Conclusion
+
+Java Generics offer a powerful way to write more flexible, reusable, and
+type-safe code. By incorporating generics into your Java projects, you can
+improve code quality, reduce errors, and create more maintainable applications.
+As you become more comfortable with generics, you'll find them an indispensable
+tool in your object-oriented programming toolkit.
