@@ -1,0 +1,169 @@
+---
+title:
+  'Embracing Functional Paradigms in Java: From Lambda Expressions to Stream
+  APIs'
+date: '2024-10-19'
+summary:
+  'Explore the world of functional programming in Java, starting with lambda
+  expressions and diving into advanced concepts like Stream APIs and method
+  references. Learn how these features can make your code more concise,
+  readable, and efficient.'
+author: 'Erik Nguyen'
+---
+
+# Embracing Functional Paradigms in Java: From Lambda Expressions to Stream APIs
+
+Java, traditionally known for its object-oriented paradigm, has been evolving to
+embrace functional programming concepts. Since Java 8, developers have had
+powerful tools at their disposal to write more expressive, concise, and
+maintainable code. Let's dive into the world of functional programming in Java,
+starting with lambda expressions and exploring beyond.
+
+## Introduction to Functional Programming in Java
+
+Functional programming is a paradigm that treats computation as the evaluation
+of mathematical functions and avoids changing state and mutable data. Java's
+journey into functional programming began with the introduction of lambda
+expressions in Java 8, marking a significant shift in how we can write and think
+about Java code.
+
+<Callout type='info'>
+  Lambda expressions in Java provide a clear and concise way to represent one
+  method interface using an expression. They improve the Collection libraries
+  making it easier to iterate through, filter, and extract data from a
+  Collection.
+</Callout>
+
+## Lambda Expressions: The Gateway to Functional Programming
+
+Lambda expressions are perhaps the most visible and impactful feature introduced
+to support functional programming in Java. They provide a way to write inline
+implementations of functional interfaces (interfaces with a single abstract
+method).
+
+### Syntax of Lambda Expressions
+
+The basic syntax of a lambda expression is:
+
+```java
+(parameters) -> expression
+```
+
+or
+
+```java
+(parameters) -> { statements; }
+```
+
+For example, here's how you might use a lambda expression to sort a list of
+strings by their length:
+
+```java
+List<String> names = Arrays.asList("Alice", "Bob", "Charlie", "David");
+names.sort((a, b) -> a.length() - b.length());
+```
+
+This concise syntax replaces the more verbose anonymous inner class approach:
+
+```java
+names.sort(new Comparator<String>() {
+    @Override
+    public int compare(String a, String b) {
+        return a.length() - b.length();
+    }
+});
+```
+
+## Functional Interfaces
+
+Lambda expressions work with functional interfaces. Java provides several
+built-in functional interfaces in the `java.util.function` package, such as
+`Predicate`, `Function`, `Consumer`, and `Supplier`.
+
+```java
+Predicate<String> isLong = s -> s.length() > 10;
+Function<String, Integer> getLength = String::length;
+Consumer<String> printer = System.out::println;
+Supplier<Double> randomValue = Math::random;
+```
+
+## Method References
+
+Method references provide an even more compact syntax for lambda expressions
+that call an existing method. They come in four forms:
+
+1. Static method reference: `ClassName::staticMethodName`
+2. Instance method reference of a particular object:
+   `objectReference::instanceMethodName`
+3. Instance method reference of an arbitrary object of a particular type:
+   `ClassName::instanceMethodName`
+4. Constructor reference: `ClassName::new`
+
+```java
+List<String> names = Arrays.asList("Alice", "Bob", "Charlie");
+names.forEach(System.out::println);  // Method reference
+```
+
+## Stream API: Unleashing the Power of Functional Programming
+
+The Stream API, introduced alongside lambda expressions, provides a powerful and
+flexible way to process collections of data in a functional style.
+
+<Callout type='warning'>
+  Streams are not a data structure. They take input from Collections, Arrays, or
+  I/O channels and don't change the original data source. Instead, they provide
+  a result of pipelined operations performed on the source data.
+</Callout>
+
+Here's an example that demonstrates the power of streams:
+
+```java
+List<String> names = Arrays.asList("Alice", "Bob", "Charlie", "David", "Eva");
+long count = names.stream()
+                  .filter(name -> name.length() > 4)
+                  .map(String::toUpperCase)
+                  .sorted()
+                  .count();
+System.out.println("Number of long names: " + count);
+```
+
+This code filters names longer than 4 characters, converts them to uppercase,
+sorts them, and counts the result, all in a single, readable line of operations.
+
+## Advanced Functional Concepts
+
+### Optional
+
+The `Optional` class is a container object that may or may not contain a
+non-null value. It's a way of representing optional values instead of null
+references.
+
+```java
+Optional<String> optional = Optional.of("Hello");
+optional.ifPresent(System.out::println);
+```
+
+### Parallel Streams
+
+Parallel streams allow you to leverage multi-core processors easily:
+
+```java
+long count = names.parallelStream()
+                  .filter(name -> name.length() > 4)
+                  .count();
+```
+
+## Conclusion
+
+Functional programming in Java, starting with lambda expressions and extending
+to the Stream API and beyond, has transformed the way we write Java code. These
+features allow for more expressive, concise, and often more efficient code. By
+embracing these functional paradigms, Java developers can write cleaner code
+that's easier to read, maintain, and parallelize.
+
+As you continue your journey with Java, remember that functional programming is
+not about replacing object-oriented programming, but complementing it. The true
+power comes from knowing when and how to blend these paradigms to create robust,
+efficient, and maintainable applications.
+
+Happy coding, and may your functions be pure and your side effects controlled!
