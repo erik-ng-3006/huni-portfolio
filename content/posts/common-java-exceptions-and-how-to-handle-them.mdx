@@ -1,0 +1,286 @@
+---
+title: "Common Java Exceptions and How to Handle Them: A Developer's Guide"
+date: '2024-10-24'
+summary:
+  "Master the art of handling common Java exceptions with practical examples and
+  best practices. Learn how to identify, prevent, and properly handle the most
+  frequent exceptions you'll encounter in Java development."
+author: 'Erik Nguyen'
+---
+
+# Common Java Exceptions and How to Handle Them: A Developer's Guide
+
+Every Java developer encounters exceptions regularly. Understanding the most
+common exceptions, why they occur, and how to handle them properly is crucial
+for writing robust applications. Let's dive into the most frequently encountered
+Java exceptions and learn how to deal with them effectively.
+
+## 1. NullPointerException (NPE)
+
+The most infamous of all Java exceptions, NullPointerException occurs when you
+try to use a reference that points to null.
+
+<Callout type='warning'>
+  NullPointerException is the most common exception in Java applications. Always
+  validate objects before accessing their methods or properties, especially when
+  dealing with external data or optional values.
+</Callout>
+
+### Common Causes and Solutions
+
+```java
+// Problematic code
+String str = null;
+int length = str.length(); // Throws NullPointerException
+
+// Better approach using null check
+if (str != null) {
+    int length = str.length();
+}
+
+// Modern approach using Optional
+Optional<String> optionalStr = Optional.ofNullable(str);
+int length = optionalStr.map(String::length).orElse(0);
+```
+
+### Prevention Strategies
+
+1. Use Objects.requireNonNull():
+
+```java
+public void processUser(User user) {
+    Objects.requireNonNull(user, "User cannot be null");
+    // Process user
+}
+```
+
+2. Utilize Optional for nullable values:
+
+```java
+public Optional<User> findUserById(String id) {
+    User user = userRepository.findById(id);
+    return Optional.ofNullable(user);
+}
+```
+
+## 2. ArrayIndexOutOfBoundsException
+
+Occurs when trying to access an array element with an invalid index.
+
+<Callout type='info'>
+  Always verify array indices before access and remember that array indices are
+  zero-based in Java.
+</Callout>
+
+### Example and Solution
+
+```java
+// Problematic code
+int[] numbers = new int[5];
+numbers[5] = 10; // Throws ArrayIndexOutOfBoundsException
+
+// Safe approach
+public void setArrayValue(int[] array, int index, int value) {
+    if (array != null && index >= 0 && index < array.length) {
+        array[index] = value;
+    } else {
+        throw new IllegalArgumentException("Invalid array index: " + index);
+    }
+}
+```
+
+## 3. NumberFormatException
+
+Thrown when attempting to convert a string to a numeric type and the string has
+an inappropriate format.
+
+### Handling Example
+
+```java
+// Safe number parsing
+public int parseUserInput(String input) {
+    try {
+        return Integer.parseInt(input.trim());
+    } catch (NumberFormatException e) {
+        // Log the error
+        logger.error("Invalid number format: {}", input, e);
+        // Return default value or throw custom exception
+        throw new InvalidUserInputException("Please enter a valid number", e);
+    }
+}
+```
+
+<Callout type='tip'>
+  When parsing numbers from user input or external sources, always validate and
+  sanitize the input first. Consider using regular expressions to pre-validate
+  numeric strings.
+</Callout>
+
+## 4. ClassCastException
+
+Occurs when trying to cast an object to an incompatible type.
+
+### Prevention and Handling
+
+```java
+// Problematic code
+Object obj = "Hello";
+Integer number = (Integer) obj; // Throws ClassCastException
+
+// Safe approach using instanceof
+public void processObject(Object obj) {
+    if (obj instanceof String) {
+        String str = (String) obj;
+        // Process string
+    } else if (obj instanceof Integer) {
+        Integer number = (Integer) obj;
+        // Process number
+    }
+}
+
+// Modern approach (Java 16+)
+public void processModernObject(Object obj) {
+    if (obj instanceof String str) {
+        // Process string directly
+    } else if (obj instanceof Integer number) {
+        // Process number directly
+    }
+}
+```
+
+## 5. IllegalArgumentException
+
+A common runtime exception thrown when a method receives an inappropriate
+argument.
+
+### Proper Usage Example
+
+```java
+public class User {
+    private String email;
+
+    public void setEmail(String email) {
+        if (email == null || !email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+            throw new IllegalArgumentException("Invalid email format");
+        }
+        this.email = email;
+    }
+}
+```
+
+## 6. ConcurrentModificationException
+
+Occurs when trying to modify a collection while iterating over it.
+
+<Callout type='error'>
+  Never modify a collection directly while iterating over it. Use Iterator's
+  remove() method or create a new collection for modifications.
+</Callout>
+
+### Example and Solution
+
+```java
+// Problematic code
+List<String> list = new ArrayList<>();
+for (String item : list) {
+    if (item.isEmpty()) {
+        list.remove(item); // Throws ConcurrentModificationException
+    }
+}
+
+// Safe approach using Iterator
+public void removeEmptyStrings(List<String> list) {
+    Iterator<String> iterator = list.iterator();
+    while (iterator.hasNext()) {
+        if (iterator.next().isEmpty()) {
+            iterator.remove();
+        }
+    }
+}
+
+// Alternative using removeIf (Java 8+)
+list.removeIf(String::isEmpty);
+```
+
+## 7. IOException
+
+A checked exception that occurs during Input/Output operations.
+
+### Handling Example
+
+```java
+public class FileProcessor {
+    public String readFile(String path) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
+            StringBuilder content = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                content.append(line).append("\n");
+            }
+            return content.toString();
+        } catch (FileNotFoundException e) {
+            logger.error("File not found: {}", path, e);
+            throw new ResourceNotFoundException("File not found: " + path, e);
+        } catch (IOException e) {
+            logger.error("Error reading file: {}", path, e);
+            throw new FileProcessingException("Error processing file: " + path, e);
+        }
+    }
+}
+```
+
+## Best Practices for Exception Handling
+
+1. **Create Custom Exceptions**
+
+```java
+public class ResourceNotFoundException extends RuntimeException {
+    public ResourceNotFoundException(String message) {
+        super(message);
+    }
+
+    public ResourceNotFoundException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}
+```
+
+2. **Use Exception Wrapping**
+
+```java
+try {
+    // Some operation
+} catch (SQLException e) {
+    throw new DatabaseException("Database operation failed", e);
+}
+```
+
+3. **Proper Logging**
+
+```java
+try {
+    // Risky operation
+} catch (Exception e) {
+    logger.error("Operation failed: {}", operationName, e);
+    // Handle or rethrow
+}
+```
+
+<Callout type='info'>
+  Always include both error messages and stack traces in your logs. This
+  information is crucial for debugging production issues.
+</Callout>
+
+## Conclusion
+
+Understanding and properly handling common exceptions is crucial for developing
+robust Java applications. Remember these key points:
+
+1. Validate input and state before operations
+2. Use proper exception handling patterns
+3. Create meaningful custom exceptions
+4. Log exceptions with appropriate context
+5. Use modern Java features when applicable
+
+By following these guidelines and understanding common exceptions, you'll be
+better equipped to write more reliable and maintainable Java applications.
