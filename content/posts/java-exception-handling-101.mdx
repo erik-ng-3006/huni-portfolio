@@ -1,0 +1,282 @@
+---
+title: 'Java Exception Handling 101: The Complete Guide'
+date: '2024-10-23'
+summary:
+  'Master Java exception handling with this comprehensive guide covering
+  everything from basic concepts to best practices. Learn about different types
+  of exceptions, handling mechanisms, and real-world implementation strategies.'
+author: 'Erik Nguyen'
+---
+
+# Java Exception Handling 101: The Complete Guide
+
+Exception handling is a crucial aspect of writing robust Java applications.
+Whether you're a beginner or an experienced developer, understanding how to
+properly handle exceptions can make the difference between a reliable
+application and one that fails unexpectedly.
+
+## What are Exceptions?
+
+Exceptions are events that occur during program execution that disrupt the
+normal flow of instructions. They represent problems or exceptional conditions
+that can occur during runtime.
+
+<Callout type='info'>
+  Exceptions in Java are objects that inherit from the java.lang.Throwable
+  class. They provide a clean way to handle runtime errors, making programs more
+  robust and maintainable.
+</Callout>
+
+## The Exception Hierarchy
+
+Understanding the Java exception hierarchy is crucial for proper exception
+handling:
+
+```java
+                    Object
+                      ↓
+                  Throwable
+                 ↙         ↘
+            Error           Exception
+                         ↙          ↘
+            Checked Exceptions    RuntimeException
+                                (Unchecked Exceptions)
+```
+
+### Types of Exceptions
+
+1. **Checked Exceptions**
+
+   - Must be either caught or declared
+   - Inherit from Exception but not RuntimeException
+   - Example: IOException, SQLException
+
+2. **Unchecked Exceptions**
+
+   - Runtime exceptions
+   - Don't need to be explicitly caught
+   - Example: NullPointerException, ArrayIndexOutOfBoundsException
+
+3. **Errors**
+   - Serious problems that shouldn't be caught
+   - Example: OutOfMemoryError, StackOverflowError
+
+<Callout type='warning'>
+  Never catch Error or its subclasses. These represent serious problems that
+  your application shouldn't try to recover from.
+</Callout>
+
+## Basic Exception Handling
+
+### The try-catch Block
+
+The fundamental construct for exception handling:
+
+```java
+try {
+    // Code that might throw an exception
+    int result = 10 / 0;
+} catch (ArithmeticException e) {
+    // Handle the specific exception
+    System.err.println("Division by zero: " + e.getMessage());
+} catch (Exception e) {
+    // Handle any other exceptions
+    System.err.println("General error: " + e.getMessage());
+}
+```
+
+### The finally Block
+
+The `finally` block always executes, regardless of whether an exception occurs:
+
+```java
+try {
+    // Some risky code
+} catch (Exception e) {
+    // Handle the exception
+} finally {
+    // This will always execute
+    // Good for cleanup operations
+}
+```
+
+### Try-with-resources
+
+Introduced in Java 7, this feature automatically closes resources that implement
+AutoCloseable:
+
+```java
+try (BufferedReader reader = new BufferedReader(new FileReader("file.txt"))) {
+    String line = reader.readLine();
+    // Process the file
+} catch (IOException e) {
+    // Handle the exception
+}
+// reader is automatically closed
+```
+
+<Callout type='tip'>
+  Always use try-with-resources when working with resources that need to be
+  closed (like files, database connections, or network streams). It prevents
+  resource leaks and makes your code cleaner.
+</Callout>
+
+## Exception Handling Best Practices
+
+### 1. Be Specific with Exception Catching
+
+Bad:
+
+```java
+try {
+    // Some code
+} catch (Exception e) {  // Too generic
+    e.printStackTrace();
+}
+```
+
+Good:
+
+```java
+try {
+    // Some code
+} catch (FileNotFoundException e) {
+    // Handle file not found
+} catch (IOException e) {
+    // Handle other I/O problems
+}
+```
+
+### 2. Don't Swallow Exceptions
+
+Never leave catch blocks empty or just print the stack trace. Always handle
+exceptions appropriately:
+
+```java
+try {
+    // Some code
+} catch (Exception e) {
+    logger.error("Operation failed", e);
+    throw new ServiceException("Unable to complete operation", e);
+}
+```
+
+### 3. Custom Exceptions
+
+Create custom exceptions for specific business logic:
+
+```java
+public class UserNotFoundException extends Exception {
+    public UserNotFoundException(String message) {
+        super(message);
+    }
+
+    public UserNotFoundException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}
+```
+
+### 4. Exception Translation
+
+Convert low-level exceptions to more meaningful ones:
+
+```java
+try {
+    // Database operation
+} catch (SQLException e) {
+    throw new UserServiceException("Failed to retrieve user data", e);
+}
+```
+
+## Real-World Examples
+
+### File Processing
+
+```java
+public class FileProcessor {
+    public static String readFile(String path) throws IOException {
+        try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
+            StringBuilder content = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                content.append(line).append("\n");
+            }
+            return content.toString();
+        }
+    }
+}
+```
+
+### Database Operations
+
+```java
+public class UserDao {
+    public User findUser(String userId) throws UserNotFoundException {
+        try (Connection conn = dataSource.getConnection()) {
+            // Database operations
+            if (user == null) {
+                throw new UserNotFoundException("User not found: " + userId);
+            }
+            return user;
+        } catch (SQLException e) {
+            throw new DatabaseException("Database error while finding user", e);
+        }
+    }
+}
+```
+
+<Callout type='info'>
+  When working with databases, consider using Spring's exception translation
+  mechanism, which converts SQL exceptions into more meaningful
+  DataAccessExceptions.
+</Callout>
+
+## Common Anti-patterns to Avoid
+
+1. Catching Exception when you know the specific exceptions that could occur
+2. Using exceptions for flow control
+3. Catching exceptions and doing nothing (empty catch blocks)
+4. Not closing resources properly
+5. Catching Throwable or Error
+
+## Exception Handling in Modern Java
+
+### Multi-catch Block
+
+```java
+try {
+    // Some code
+} catch (IOException | SQLException e) {
+    // Handle both exceptions the same way
+    logger.error("Error accessing external resource", e);
+}
+```
+
+### Optional for Null Handling
+
+Instead of throwing NullPointerException, use Optional:
+
+```java
+Optional<User> user = Optional.ofNullable(getUserById(id));
+user.ifPresentOrElse(
+    this::processUser,
+    () -> logger.warn("User not found")
+);
+```
+
+## Conclusion
+
+Exception handling is a critical skill for Java developers. By following these
+guidelines and best practices, you can write more robust and maintainable
+applications. Remember:
+
+- Be specific with exception handling
+- Use appropriate exception types
+- Always close resources properly
+- Log exceptions meaningfully
+- Create custom exceptions when needed
+- Don't use exceptions for flow control
+
+Proper exception handling might require more initial effort, but it pays off in
+terms of application reliability and maintainability.
