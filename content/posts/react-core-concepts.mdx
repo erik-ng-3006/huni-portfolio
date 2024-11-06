@@ -1,0 +1,508 @@
+---
+title: "Understanding React's Core Concepts Through Examples"
+author: 'Erik Nguyen'
+date: '2024-11-04'
+summary:
+  "A deep dive into React's fundamental concepts including components, props,
+  state, lifecycle, and hooks, explained through practical, real-world examples."
+---
+
+# Understanding React's Core Concepts Through Examples
+
+In this comprehensive guide, we'll explore React's core concepts through
+practical examples. Each concept will be demonstrated with real-world scenarios
+to help solidify your understanding.
+
+## 1. Components: The Building Blocks
+
+### Functional Components vs Class Components
+
+<Callout type='info'>
+  While class components are still supported, functional components with hooks
+  are now the recommended approach in modern React development.
+</Callout>
+
+```typescript
+// Modern Functional Component
+interface UserProfileProps {
+  name: string;
+  role: string;
+  avatar: string;
+}
+
+const UserProfile = ({ name, role, avatar }: UserProfileProps) => {
+  return (
+    <div className="user-profile">
+      <img src={avatar} alt={name} />
+      <h2>{name}</h2>
+      <span>{role}</span>
+    </div>
+  );
+};
+
+// Legacy Class Component (for comparison)
+class UserProfileClass extends React.Component<UserProfileProps> {
+  render() {
+    const { name, role, avatar } = this.props;
+    return (
+      <div className="user-profile">
+        <img src={avatar} alt={name} />
+        <h2>{name}</h2>
+        <span>{role}</span>
+      </div>
+    );
+  }
+}
+```
+
+### Component Composition
+
+```typescript
+interface CardProps {
+  title: string;
+  children: React.ReactNode;
+}
+
+const Card = ({ title, children }: CardProps) => {
+  return (
+    <div className="card">
+      <div className="card-header">
+        <h3>{title}</h3>
+      </div>
+      <div className="card-content">
+        {children}
+      </div>
+    </div>
+  );
+};
+
+const UserCard = () => {
+  return (
+    <Card title="User Profile">
+      <UserProfile
+        name="John Doe"
+        role="Developer"
+        avatar="/avatar.jpg"
+      />
+    </Card>
+  );
+};
+```
+
+## 2. Props and PropTypes
+
+### Props Deep Dive
+
+```typescript
+interface ButtonProps {
+  variant?: 'primary' | 'secondary' | 'danger';
+  size?: 'small' | 'medium' | 'large';
+  isLoading?: boolean;
+  disabled?: boolean;
+  onClick?: () => void;
+  children: React.ReactNode;
+}
+
+const Button = ({
+  variant = 'primary',
+  size = 'medium',
+  isLoading = false,
+  disabled = false,
+  onClick,
+  children
+}: ButtonProps) => {
+  const baseClasses = 'button';
+  const variantClasses = `button-${variant}`;
+  const sizeClasses = `button-${size}`;
+
+  return (
+    <button
+      className={`${baseClasses} ${variantClasses} ${sizeClasses}`}
+      onClick={onClick}
+      disabled={disabled || isLoading}
+    >
+      {isLoading ? <Spinner /> : children}
+    </button>
+  );
+};
+```
+
+### Props Drilling and Context
+
+<Callout type='warning'>
+  Prop drilling can make code harder to maintain. Consider using Context for
+  deeply nested data passing.
+</Callout>
+
+```typescript
+// Creating a Theme Context
+interface ThemeContextType {
+  theme: 'light' | 'dark';
+  toggleTheme: () => void;
+}
+
+const ThemeContext = React.createContext<ThemeContextType | undefined>(undefined);
+
+// Theme Provider
+const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
+
+  return (
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
+};
+
+// Using Context instead of prop drilling
+const ThemedButton = () => {
+  const themeContext = React.useContext(ThemeContext);
+  if (!themeContext) throw new Error('Must be used within ThemeProvider');
+
+  const { theme, toggleTheme } = themeContext;
+
+  return (
+    <Button
+      variant={theme === 'light' ? 'primary' : 'secondary'}
+      onClick={toggleTheme}
+    >
+      Toggle Theme
+    </Button>
+  );
+};
+```
+
+## 3. State Management
+
+### Local State with useState
+
+```typescript
+interface Todo {
+  id: number;
+  text: string;
+  completed: boolean;
+}
+
+const TodoList = () => {
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const [inputValue, setInputValue] = useState('');
+
+  const addTodo = () => {
+    if (!inputValue.trim()) return;
+
+    setTodos(prev => [
+      ...prev,
+      {
+        id: Date.now(),
+        text: inputValue,
+        completed: false
+      }
+    ]);
+    setInputValue('');
+  };
+
+  const toggleTodo = (id: number) => {
+    setTodos(prev =>
+      prev.map(todo =>
+        todo.id === id
+          ? { ...todo, completed: !todo.completed }
+          : todo
+      )
+    );
+  };
+
+  return (
+    <div>
+      <input
+        value={inputValue}
+        onChange={e => setInputValue(e.target.value)}
+      />
+      <button onClick={addTodo}>Add Todo</button>
+
+      <ul>
+        {todos.map(todo => (
+          <li
+            key={todo.id}
+            onClick={() => toggleTodo(todo.id)}
+            style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}
+          >
+            {todo.text}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+```
+
+### Complex State with useReducer
+
+```typescript
+interface State {
+  todos: Todo[]
+  filter: 'all' | 'active' | 'completed'
+  loading: boolean
+}
+
+type Action =
+  | { type: 'ADD_TODO'; payload: string }
+  | { type: 'TOGGLE_TODO'; payload: number }
+  | { type: 'SET_FILTER'; payload: State['filter'] }
+  | { type: 'SET_LOADING'; payload: boolean }
+
+const todoReducer = (state: State, action: Action): State => {
+  switch (action.type) {
+    case 'ADD_TODO':
+      return {
+        ...state,
+        todos: [
+          ...state.todos,
+          {
+            id: Date.now(),
+            text: action.payload,
+            completed: false
+          }
+        ]
+      }
+
+    case 'TOGGLE_TODO':
+      return {
+        ...state,
+        todos: state.todos.map(todo =>
+          todo.id === action.payload
+            ? { ...todo, completed: !todo.completed }
+            : todo
+        )
+      }
+
+    case 'SET_FILTER':
+      return {
+        ...state,
+        filter: action.payload
+      }
+
+    case 'SET_LOADING':
+      return {
+        ...state,
+        loading: action.payload
+      }
+
+    default:
+      return state
+  }
+}
+```
+
+## 4. Effects and Lifecycle
+
+### useEffect Patterns
+
+```typescript
+const UserProfile = ({ userId }: { userId: string }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch user data
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchUser = async () => {
+      try {
+        const response = await fetch(`/api/users/${userId}`);
+        const data = await response.json();
+
+        if (isMounted) {
+          setUser(data);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError('Failed to fetch user');
+        }
+      }
+    };
+
+    fetchUser();
+
+    // Cleanup function
+    return () => {
+      isMounted = false;
+    };
+  }, [userId]);
+
+  if (error) return <div>Error: {error}</div>;
+  if (!user) return <div>Loading...</div>;
+
+  return (
+    <div>
+      <h2>{user.name}</h2>
+      <p>{user.email}</p>
+    </div>
+  );
+};
+```
+
+### Cleanup and Memory Leaks
+
+<Callout type='important'>
+  Always clean up subscriptions, intervals, and event listeners to prevent
+  memory leaks.
+</Callout>
+
+```typescript
+const Timer = () => {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCount(prev => prev + 1);
+    }, 1000);
+
+    // Cleanup function
+    return () => clearInterval(interval);
+  }, []);
+
+  return <div>Count: {count}</div>;
+};
+```
+
+## 5. Performance Optimization
+
+### Memoization with useMemo and useCallback
+
+```typescript
+const ExpensiveComponent = ({ data, onItemClick }: {
+  data: number[];
+  onItemClick: (item: number) => void;
+}) => {
+  // Memoize expensive calculations
+  const processedData = useMemo(() => {
+    return data.map(item => item * 2);
+  }, [data]);
+
+  // Memoize callbacks
+  const handleClick = useCallback((item: number) => {
+    onItemClick(item);
+  }, [onItemClick]);
+
+  return (
+    <ul>
+      {processedData.map(item => (
+        <li key={item} onClick={() => handleClick(item)}>
+          {item}
+        </li>
+      ))}
+    </ul>
+  );
+};
+```
+
+### React.memo for Component Memoization
+
+```typescript
+interface ItemProps {
+  text: string;
+  onDelete: () => void;
+}
+
+const Item = memo(({ text, onDelete }: ItemProps) => {
+  return (
+    <div>
+      <span>{text}</span>
+      <button onClick={onDelete}>Delete</button>
+    </div>
+  );
+});
+```
+
+<Callout type='warning'>
+  Don't overuse memoization. Only apply it when you have identified a
+  performance bottleneck.
+</Callout>
+
+## Best Practices and Common Patterns
+
+### Custom Hooks
+
+```typescript
+const useLocalStorage = <T>(key: string, initialValue: T) => {
+  // State to store our value
+  // Pass initial state function to useState so logic is only executed once
+  const [storedValue, setStoredValue] = useState<T>(() => {
+    try {
+      const item = window.localStorage.getItem(key)
+      return item ? JSON.parse(item) : initialValue
+    } catch (error) {
+      console.error(error)
+      return initialValue
+    }
+  })
+
+  // Return a wrapped version of useState's setter function that ...
+  // ... persists the new value to localStorage.
+  const setValue = (value: T | ((val: T) => T)) => {
+    try {
+      // Allow value to be a function so we have same API as useState
+      const valueToStore =
+        value instanceof Function ? value(storedValue) : value
+      setStoredValue(valueToStore)
+      window.localStorage.setItem(key, JSON.stringify(valueToStore))
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  return [storedValue, setValue] as const
+}
+```
+
+### Error Boundaries
+
+```typescript
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('Error:', error);
+    console.error('Error Info:', errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <h1>Something went wrong.</h1>;
+    }
+
+    return this.props.children;
+  }
+}
+```
+
+## Conclusion
+
+Understanding these core concepts is crucial for building robust React
+applications. Remember:
+
+- Components are the building blocks of your UI
+- Props and state manage data flow
+- Effects handle side effects
+- Performance optimization should be applied strategically
+- Custom hooks help with code reuse
+- Error boundaries provide graceful error handling
+
+<Callout type='tip'>
+  Practice these concepts by building small, focused components before combining
+  them into larger applications.
+</Callout>
