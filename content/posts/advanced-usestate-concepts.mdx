@@ -1,0 +1,388 @@
+---
+title: 'Advanced useState Patterns You Should Know'
+date: '2024-11-07'
+author: 'Erik Nguyen'
+summary: "Explore advanced techniques for managing state with React's useState hook, including complex state, performance optimizations, and functional updates."
+---
+
+# Advanced useState Patterns You Should Know
+
+The `useState` hook is the foundation of state management in React. While it may seem simple at first, there are many advanced patterns and techniques you can use to effectively manage complex state in your applications. Let's dive in.
+
+## Complex State with Objects and Arrays
+
+### Updating Nested Objects
+
+```typescript
+interface FormState {
+  name: string;
+  email: string;
+  address: {
+    street: string;
+    city: string;
+    state: string;
+  };
+}
+
+const EditProfileForm = () => {
+  const [formState, setFormState] = useState<FormState>({
+    name: 'John Doe',
+    email: 'john@example.com',
+    address: {
+      street: '123 Main St',
+      city: 'Anytown',
+      state: 'CA'
+    }
+  });
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormState(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleAddressChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormState(prev => ({
+      ...prev,
+      address: {
+        ...prev.address,
+        [name]: value
+      }
+    }));
+  };
+
+  return (
+    <form>
+      <input
+        name="name"
+        value={formState.name}
+        onChange={handleInputChange}
+      />
+      <input
+        name="email"
+        value={formState.email}
+        onChange={handleInputChange}
+      />
+      <input
+        name="street"
+        value={formState.address.street}
+        onChange={handleAddressChange}
+      />
+      {/* Other address fields */}
+    </form>
+  );
+};
+```
+
+<Callout type='tip'>
+	Use the spread operator to create new object/array references and avoid
+	mutating the original state.
+</Callout>
+
+### Updating Arrays
+
+```typescript
+interface Task {
+  id: number;
+  text: string;
+  completed: boolean;
+}
+
+const TodoList = () => {
+  const [tasks, setTasks] = useState<Task[]>([
+    { id: 1, text: 'Finish report', completed: false },
+    { id: 2, text: 'Buy groceries', completed: false },
+    { id: 3, text: 'Call mom', completed: true }
+  ]);
+
+  const handleToggleTask = (id: number) => {
+    setTasks(prev =>
+      prev.map(task =>
+        task.id === id
+          ? { ...task, completed: !task.completed }
+          : task
+      )
+    );
+  };
+
+  const handleDeleteTask = (id: number) => {
+    setTasks(prev => prev.filter(task => task.id !== id));
+  };
+
+  const handleAddTask = () => {
+    const newTask: Task = {
+      id: Date.now(),
+      text: 'New task',
+      completed: false
+    };
+    setTasks(prev => [...prev, newTask]);
+  };
+
+  return (
+    <div>
+      <button onClick={handleAddTask}>Add Task</button>
+      <ul>
+        {tasks.map(task => (
+          <li key={task.id}>
+            <input
+              type="checkbox"
+              checked={task.completed}
+              onChange={() => handleToggleTask(task.id)}
+            />
+            <span style={{ textDecoration: task.completed ? 'line-through' : 'none' }}>
+              {task.text}
+            </span>
+            <button onClick={() => handleDeleteTask(task.id)}>Delete</button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+```
+
+## Functional State Updates
+
+### Updating State Based on Previous State
+
+```typescript
+const Counter = () => {
+  const [count, setCount] = useState(0);
+
+  const handleIncrement = () => {
+    setCount(prev => prev + 1);
+  };
+
+  const handleDecrement = () => {
+    setCount(prev => prev - 1);
+  };
+
+  return (
+    <div>
+      <button onClick={handleDecrement}>-</button>
+      <span>{count}</span>
+      <button onClick={handleIncrement}>+</button>
+    </div>
+  );
+};
+```
+
+<Callout type='tip'>
+	Use the functional form of `setCount` when your update depends on the
+	previous state.
+</Callout>
+
+### Batched State Updates
+
+```typescript
+const CounterWithBatch = () => {
+  const [count, setCount] = useState(0);
+  const [otherState, setOtherState] = useState(0);
+
+  const handleClick = () => {
+    // React will batch these updates, only triggering one re-render
+    setCount(prev => prev + 1);
+    setOtherState(prev => prev + 1);
+  };
+
+  return (
+    <div>
+      <button onClick={handleClick}>Increment</button>
+      <span>Count: {count}</span>
+      <span>Other State: {otherState}</span>
+    </div>
+  );
+};
+```
+
+<Callout type='info'>
+	React 18 introduced automatic batching, which provides better performance by
+	batching state updates.
+</Callout>
+
+## Memoization and Performance Optimizations
+
+### Memoizing State Calculations
+
+```typescript
+const MemoizedCounter = () => {
+  const [count, setCount] = useState(0);
+  const [otherState, setOtherState] = useState(0);
+
+  // Memoize the expensive calculation
+  const expensiveCalculation = useMemo(() => {
+    let result = 0;
+    for (let i = 0; i < 1000000; i++) {
+      result += i;
+    }
+    return result;
+  }, []);
+
+  const handleIncrement = () => {
+    setCount(prev => prev + 1);
+  };
+
+  const handleOtherStateChange = () => {
+    setOtherState(prev => prev + 1);
+  };
+
+  return (
+    <div>
+      <button onClick={handleIncrement}>Increment Count</button>
+      <button onClick={handleOtherStateChange}>Change Other State</button>
+      <p>Count: {count}</p>
+      <p>Other State: {otherState}</p>
+      <p>Expensive Calculation: {expensiveCalculation}</p>
+    </div>
+  );
+};
+```
+
+<Callout type='warning'>
+	Use `useMemo` sparingly. It can improve performance, but overuse can lead to
+	unnecessary complexity.
+</Callout>
+
+### Memoizing Component Re-renders
+
+```typescript
+interface CounterProps {
+  initialCount: number;
+}
+
+const MemoizedCounterComponent = memo(({ initialCount }: CounterProps) => {
+  const [count, setCount] = useState(initialCount);
+
+  const handleIncrement = () => {
+    setCount(prev => prev + 1);
+  };
+
+  return (
+    <div>
+      <button onClick={handleIncrement}>Increment</button>
+      <span>{count}</span>
+    </div>
+  );
+});
+```
+
+<Callout type='tip'>
+	Use `React.memo` to memoize functional components and prevent unnecessary
+	re-renders.
+</Callout>
+
+## Asynchronous State Updates
+
+```typescript
+const AsyncCounter = () => {
+  const [count, setCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleIncrementAsync = async () => {
+    setIsLoading(true);
+    try {
+      // Simulate an asynchronous operation
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      setCount(prev => prev + 1);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      <button onClick={handleIncrementAsync} disabled={isLoading}>
+        {isLoading ? 'Loading...' : 'Increment Async'}
+      </button>
+      <span>{count}</span>
+    </div>
+  );
+};
+```
+
+<Callout type='important'>
+	Always handle loading and error states when dealing with asynchronous
+	operations.
+</Callout>
+
+## Lazy Initialization
+
+```typescript
+interface UserSettings {
+  theme: 'light' | 'dark';
+  fontSize: number;
+  locale: string;
+}
+
+const useUserSettings = () => {
+  const [userSettings, setUserSettings] = useState<UserSettings>(() => {
+    // Simulate fetching user settings from the server
+    return {
+      theme: 'light',
+      fontSize: 16,
+      locale: 'en-US'
+    };
+  });
+
+  const updateSettings = (newSettings: Partial<UserSettings>) => {
+    setUserSettings(prev => ({
+      ...prev,
+      ...newSettings
+    }));
+  };
+
+  return [userSettings, updateSettings] as const;
+};
+
+const SettingsPanel = () => {
+  const [userSettings, updateSettings] = useUserSettings();
+
+  return (
+    <div>
+      <label>
+        Theme:
+        <select
+          value={userSettings.theme}
+          onChange={e =>
+            updateSettings({ theme: e.target.value as 'light' | 'dark' })
+          }
+        >
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
+      </label>
+      {/* Other settings */}
+    </div>
+  );
+};
+```
+
+<Callout type='tip'>
+	Use the functional form of `useState` to lazily initialize the state,
+	especially for expensive or asynchronous operations.
+</Callout>
+
+## Conclusion
+
+The `useState` hook is the foundation of state management in React. By mastering advanced patterns like complex state updates, functional state updates, memoization, and lazy initialization, you can write more efficient, maintainable, and performant React applications.
+
+Remember to:
+
+-   Carefully manage updates to nested objects and arrays
+-   Use the functional form of `setState` when your update depends on previous state
+-   Leverage `useMemo` to memoize expensive calculations
+-   Apply `React.memo` to memoize component re-renders
+-   Handle loading and error states for asynchronous operations
+-   Use lazy initialization for expensive or asynchronous state initialization
+
+<Callout type='info'>
+	As React continues to evolve, keep an eye out for new state management
+	patterns and best practices.
+</Callout>
