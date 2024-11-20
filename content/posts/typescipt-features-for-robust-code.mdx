@@ -1,0 +1,147 @@
+---
+title: '5 TypeScript Features That Will Make Your Code More Robust'
+date: '2024-11-20'
+summary: 'Discover powerful TypeScript features that elevate your code quality, reduce bugs, and make your development process more efficient and reliable.'
+author: 'Erik Nguyen'
+---
+
+# 5 TypeScript Features That Will Make Your Code More Robust
+
+TypeScript continues to be a game-changer for developers seeking more reliable and maintainable code. In this post, we'll explore five powerful features that can significantly improve your code's robustness and type safety.
+
+## 1. Discriminated Unions: Precise Type Narrowing
+
+Discriminated unions allow you to create more precise type checks and safer code patterns:
+
+```typescript
+type Result =
+	| { type: 'success'; data: string }
+	| { type: 'error'; message: string };
+
+function handleResult(result: Result) {
+	switch (result.type) {
+		case 'success':
+			// TypeScript knows `data` is available
+			console.log(result.data.toUpperCase());
+			break;
+		case 'error':
+			// TypeScript knows `message` is available
+			console.error(result.message);
+			break;
+	}
+}
+```
+
+<Callout type='info'>
+	Pro Tip: Discriminated unions provide compile-time safety by ensuring
+	exhaustive type checking and preventing runtime errors.
+</Callout>
+
+## 2. Conditional Types: Dynamic Type Manipulation
+
+Conditional types enable incredibly flexible type transformations:
+
+```typescript
+type NonNullable = T extends null | undefined ? never : T;
+
+type Example = NonNullable;
+// Results in type 'string'
+
+type ExtractArray = T extends any[] ? T[number] : T;
+
+type NumberArray = ExtractArray; // type is 'number'
+type SingleNumber = ExtractArray; // type remains 'number'
+```
+
+<Callout type='warning'>
+	Advanced Technique: Conditional types allow you to create powerful
+	type-level utilities that can dramatically reduce type-related boilerplate.
+</Callout>
+
+## 3. Mapped Types: Transform Existing Types
+
+Mapped types let you create new types by transforming existing ones:
+
+```typescript
+interface Product {
+	name: string;
+	price: number;
+	description: string;
+}
+
+// Make all properties optional
+type PartialProduct = {
+	[P in keyof Product]?: Product[P];
+};
+
+// Make all properties readonly
+type ReadonlyProduct = {
+	readonly [P in keyof Product]: Product[P];
+};
+```
+
+<Callout type='success'>
+	Design Pattern: Mapped types are crucial for creating flexible type
+	transformations without duplicating type definitions.
+</Callout>
+
+## 4. Branded Types: Prevent Accidental Type Misuse
+
+Create type-safe primitives that prevent incorrect type assignments:
+
+```typescript
+type Brand = K & { __brand: T };
+
+type USD = Brand;
+type EUR = Brand;
+
+function convertUSD(amount: USD) {
+	return amount;
+}
+
+const dollars = 100 as USD;
+const euros = 100 as EUR;
+
+// Compile-time error: Cannot pass euros where USD is expected
+convertUSD(euros);
+```
+
+<Callout type='danger'>
+	Type Safety: Branded types provide an extra layer of type checking to
+	prevent logical errors in your code.
+</Callout>
+
+## 5. Const Assertions: Literal Type Precision
+
+Use const assertions to create more precise type definitions:
+
+```typescript
+const colors = {
+	primary: '#007bff',
+	secondary: '#6c757d',
+	success: '#28a745',
+} as const;
+
+// Exact literal types, not just 'string'
+type Color = (typeof colors)[keyof typeof colors];
+
+function setColor(color: Color) {
+	// Strictly typed color assignment
+}
+
+// Only these exact colors are allowed
+setColor(colors.primary);
+```
+
+<Callout type='info'>
+	Precision Matters: Const assertions lock down types to their exact literal
+	values, providing unprecedented type precision.
+</Callout>
+
+## Conclusion
+
+TypeScript's advanced type system offers powerful tools to write more robust, self-documenting code. By leveraging these features, you can catch errors earlier, reduce runtime bugs, and create more maintainable applications.
+
+Remember, type safety is a journey. Start small, experiment, and gradually incorporate these techniques into your workflow.
+
+Happy coding! 🚀
