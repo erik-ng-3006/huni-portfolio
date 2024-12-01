@@ -1,0 +1,229 @@
+---
+title: 'Mastering the Hibernate Criteria API: A Comprehensive Guide'
+summary: 'Learn how to build type-safe, dynamic queries using Hibernate Criteria API. From basic queries to complex projections and transformations, this guide covers everything you need to know.'
+date: '2024-11-30'
+author: 'Erik Nguyen'
+---
+
+# Mastering the Hibernate Criteria API: A Comprehensive Guide
+
+## Introduction to Criteria API
+
+The Criteria API provides a type-safe, programmatic way to build database queries. Unlike HQL (Hibernate Query Language) or native SQL, Criteria API allows you to construct queries dynamically using Java objects and methods, making it especially powerful for building complex search functionality.
+
+Let's start with a simple entity for our examples:
+
+```java
+@Entity
+@Table(name = "employees")
+public class Employee {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String firstName;
+    private String lastName;
+    private String department;
+    private Double salary;
+    private LocalDate hireDate;
+
+    // Getters, setters, and constructors
+}
+```
+
+## Building Dynamic Queries
+
+Here's how to create basic queries using Criteria API:
+
+```java
+public class EmployeeRepository {
+    private final EntityManager entityManager;
+
+    public List<Employee> findEmployees(String firstName, String department, Double minSalary) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Employee> query = cb.createQuery(Employee.class);
+        Root<Employee> employee = query.from(Employee.class);
+
+        // Create a list to hold predicates
+        List<Predicate> predicates = new ArrayList<>();
+
+        // Add conditions dynamically
+        if (firstName != null) {
+            predicates.add(cb.like(employee.get("firstName"), firstName + "%"));
+        }
+
+        if (department != null) {
+            predicates.add(cb.equal(employee.get("department"), department));
+        }
+
+        if (minSalary != null) {
+            predicates.add(cb.greaterThanOrEqualTo(employee.get("salary"), minSalary));
+        }
+
+        // Combine all predicates with AND
+        query.where(cb.and(predicates.toArray(new Predicate[0])));
+
+        return entityManager.createQuery(query).getResultList();
+    }
+}
+```
+
+## Restrictions and Projections
+
+Projections allow you to select specific fields or compute aggregate values:
+
+```java
+public class EmployeeProjections {
+    private final EntityManager entityManager;
+
+    // Select specific fields
+    public List<EmployeeDTO> getEmployeeBasicInfo() {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<EmployeeDTO> query = cb.createQuery(EmployeeDTO.class);
+        Root<Employee> employee = query.from(Employee.class);
+
+        query.select(cb.construct(EmployeeDTO.class,
+            employee.get("id"),
+            employee.get("firstName"),
+            employee.get("lastName")));
+
+        return entityManager.createQuery(query).getResultList();
+    }
+
+    // Aggregate functions
+    public List<DepartmentStats> getDepartmentStatistics() {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<DepartmentStats> query = cb.createQuery(DepartmentStats.class);
+        Root<Employee> employee = query.from(Employee.class);
+
+        query.multiselect(
+            employee.get("department"),
+            cb.count(employee),
+            cb.avg(employee.get("salary")),
+            cb.max(employee.get("salary")))
+            .groupBy(employee.get("department"));
+
+        return entityManager.createQuery(query).getResultList();
+    }
+}
+```
+
+## Order and Group By Clauses
+
+Here's how to implement sorting and grouping:
+
+```java
+public class EmployeeSorting {
+    private final EntityManager entityManager;
+
+    public List<Employee> getEmployeesSortedByMultipleFields(String sortField, String sortDirection) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Employee> query = cb.createQuery(Employee.class);
+        Root<Employee> employee = query.from(Employee.class);
+
+        // Dynamic sorting
+        if ("asc".equalsIgnoreCase(sortDirection)) {
+            query.orderBy(cb.asc(employee.get(sortField)));
+        } else {
+            query.orderBy(cb.desc(employee.get(sortField)));
+        }
+
+        return entityManager.createQuery(query).getResultList();
+    }
+
+    public List<DepartmentSummary> getEmployeesGroupedByDepartment() {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<DepartmentSummary> query = cb.createQuery(DepartmentSummary.class);
+        Root<Employee> employee = query.from(Employee.class);
+
+        query.groupBy(employee.get("department"))
+            .having(cb.gt(cb.count(employee), 5))
+            .multiselect(
+                employee.get("department"),
+                cb.count(employee),
+                cb.sum(employee.get("salary")));
+
+        return entityManager.createQuery(query).getResultList();
+    }
+}
+```
+
+## Transforming Results
+
+You can transform query results in various ways:
+
+```java
+public class EmployeeTransformations {
+    private final EntityManager entityManager;
+
+    // Transform to DTO with constructor expression
+    public List<EmployeeSummary> getEmployeeSummaries() {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<EmployeeSummary> query = cb.createQuery(EmployeeSummary.class);
+        Root<Employee> employee = query.from(Employee.class);
+
+        query.select(cb.construct(EmployeeSummary.class,
+            employee.get("firstName"),
+            employee.get("lastName"),
+            cb.concat(cb.concat(employee.get("firstName"), " "), employee.get("lastName")),
+            cb.function("YEAR", Integer.class, employee.get("hireDate"))));
+
+        return entityManager.createQuery(query).getResultList();
+    }
+
+    // Complex transformations with subqueries
+    public List<EmployeeRank> getEmployeeRankings() {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<EmployeeRank> query = cb.createQuery(EmployeeRank.class);
+        Root<Employee> employee = query.from(Employee.class);
+
+        // Subquery to calculate department average
+        Subquery<Double> deptAvg = query.subquery(Double.class);
+        Root<Employee> subEmployee = deptAvg.from(Employee.class);
+        deptAvg.select(cb.avg(subEmployee.get("salary")))
+            .where(cb.equal(subEmployee.get("department"),
+                          employee.get("department")));
+
+        query.select(cb.construct(EmployeeRank.class,
+            employee.get("firstName"),
+            employee.get("lastName"),
+            employee.get("salary"),
+            deptAvg))
+            .orderBy(cb.desc(employee.get("salary")));
+
+        return entityManager.createQuery(query).getResultList();
+    }
+}
+```
+
+## Best Practices and Performance Considerations
+
+1. **Use Parameterized Queries**: Always use parameters instead of string concatenation to prevent SQL injection:
+```java
+predicates.add(cb.equal(employee.get("department"), departmentParam));
+```
+
+2. **Fetch Joins for Related Entities**: Use fetch joins to avoid N+1 query problems:
+```java
+Root<Employee> employee = query.from(Employee.class);
+employee.fetch("department", JoinType.LEFT);
+```
+
+3. **Caching Results**: Consider using query result caching for frequently accessed data:
+```java
+TypedQuery<Employee> typedQuery = entityManager.createQuery(query);
+typedQuery.setHint("org.hibernate.cacheable", true);
+```
+
+4. **Pagination**: Implement pagination to handle large result sets:
+```java
+TypedQuery<Employee> typedQuery = entityManager.createQuery(query);
+typedQuery.setFirstResult(pageNumber * pageSize);
+typedQuery.setMaxResults(pageSize);
+```
+
+## Conclusion
+
+The Criteria API provides a powerful, type-safe way to build dynamic queries in Hibernate. While it may seem more verbose than HQL or native SQL, its benefits become apparent when building complex, dynamic queries that need to be maintained and modified over time. The type safety and refactoring support make it an excellent choice for enterprise applications.
+
+Remember to always consider performance implications when building queries, especially when dealing with large datasets or complex joins. Use appropriate fetching strategies, caching, and pagination to ensure optimal performance.
