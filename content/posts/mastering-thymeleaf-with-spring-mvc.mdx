@@ -1,0 +1,321 @@
+---
+title: 'Mastering Thymeleaf with Spring MVC: A Comprehensive Guide'
+date: '2024-12-05'
+summary: 'Learn how to effectively use Thymeleaf templating engine with Spring MVC to build dynamic web applications'
+author: 'Erik Nguyen'
+---
+
+# Mastering Thymeleaf with Spring MVC
+
+Thymeleaf is a modern server-side Java template engine that works seamlessly with Spring MVC. In this guide, we'll explore how to use Thymeleaf effectively to build dynamic web applications.
+
+## Setting Up Thymeleaf with Spring MVC
+
+First, add the necessary dependencies to your `pom.xml`:
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-thymeleaf</artifactId>
+</dependency>
+```
+
+Configure Thymeleaf in your Spring application:
+
+```java
+@Configuration
+public class ThymeleafConfig {
+    @Bean
+    public SpringResourceTemplateResolver templateResolver() {
+        SpringResourceTemplateResolver resolver = new SpringResourceTemplateResolver();
+        resolver.setPrefix("classpath:/templates/");
+        resolver.setSuffix(".html");
+        resolver.setTemplateMode(TemplateMode.HTML);
+        resolver.setCacheable(false); // Set to true in production
+        return resolver;
+    }
+}
+```
+
+## Basic Thymeleaf Syntax
+
+### Template Structure
+
+```html
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>My Spring MVC App</title>
+</head>
+<body>
+    <h1 th:text="${pageTitle}">Default Title</h1>
+</body>
+</html>
+```
+
+### Controller Setup
+
+```java
+@Controller
+public class HomeController {
+    @GetMapping("/")
+    public String home(Model model) {
+        model.addAttribute("pageTitle", "Welcome to Our App");
+        return "home";
+    }
+}
+```
+
+## Working with Data
+
+### Displaying Text and Variables
+
+```html
+<!-- Simple text display -->
+<p th:text="${message}">Default message</p>
+
+<!-- Unescaped HTML -->
+<div th:utext="${htmlContent}">Default content</div>
+
+<!-- Using with objects -->
+<div>
+    <p th:text="${user.name}">John Doe</p>
+    <p th:text="${user.email}">john@example.com</p>
+</div>
+```
+
+### Iteration
+
+```html
+<!-- List iteration -->
+<ul>
+    <li th:each="item : ${items}" th:text="${item.name}">Item name</li>
+</ul>
+
+<!-- With status variable -->
+<table>
+    <tr th:each="user, status : ${users}">
+        <td th:text="${status.count}">1</td>
+        <td th:text="${user.name}">John Doe</td>
+    </tr>
+</table>
+```
+
+### Conditional Rendering
+
+```html
+<!-- Simple if -->
+<div th:if="${not #lists.isEmpty(users)}">
+    <!-- User list content -->
+</div>
+
+<!-- If-else -->
+<div th:if="${user.isAdmin()}" th:text="'Welcome Admin!'"></div>
+<div th:unless="${user.isAdmin()}" th:text="'Welcome User!'"></div>
+
+<!-- Switch case -->
+<div th:switch="${user.role}">
+    <p th:case="'admin'">User is an administrator</p>
+    <p th:case="'manager'">User is a manager</p>
+    <p th:case="*">User is a regular user</p>
+</div>
+```
+
+## Forms Handling
+
+### Form Template
+
+```html
+<form th:action="@{/users/save}" th:object="${user}" method="post">
+    <div>
+        <label>Name:</label>
+        <input type="text" th:field="*{name}" />
+        <span th:if="${#fields.hasErrors('name')}"
+              th:errors="*{name}"
+              class="error">
+        </span>
+    </div>
+
+    <div>
+        <label>Email:</label>
+        <input type="email" th:field="*{email}" />
+        <span th:if="${#fields.hasErrors('email')}"
+              th:errors="*{email}"
+              class="error">
+        </span>
+    </div>
+
+    <button type="submit">Save</button>
+</form>
+```
+
+### Controller for Form
+
+```java
+@Controller
+@RequestMapping("/users")
+public class UserController {
+    @GetMapping("/create")
+    public String showForm(Model model) {
+        model.addAttribute("user", new User());
+        return "users/form";
+    }
+
+    @PostMapping("/save")
+    public String saveUser(@Valid @ModelAttribute User user,
+                          BindingResult result) {
+        if (result.hasErrors()) {
+            return "users/form";
+        }
+        userService.save(user);
+        return "redirect:/users";
+    }
+}
+```
+
+## Layout and Fragments
+
+### Creating Fragments
+
+```html
+<!-- fragments/header.html -->
+<header th:fragment="header">
+    <nav>
+        <a th:href="@{/}">Home</a>
+        <a th:href="@{/about}">About</a>
+        <a th:href="@{/contact}">Contact</a>
+    </nav>
+</header>
+
+<!-- fragments/footer.html -->
+<footer th:fragment="footer">
+    <p>&copy; 2024 Your Company</p>
+</footer>
+```
+
+### Using Fragments
+
+```html
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>My App</title>
+</head>
+<body>
+    <!-- Include header -->
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <!-- Main content -->
+    <main>
+        <h1>Welcome</h1>
+        <p>Main content here</p>
+    </main>
+
+    <!-- Include footer -->
+    <div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>
+```
+
+## Advanced Features
+
+### Expression Utility Objects
+
+```html
+<!-- Dates -->
+<p th:text="${#dates.format(today, 'dd-MM-yyyy')}">31-12-2024</p>
+
+<!-- Numbers -->
+<p th:text="${#numbers.formatDecimal(price, 1, 2)}">19.99</p>
+
+<!-- Strings -->
+<p th:text="${#strings.toUpperCase(name)}">john</p>
+
+<!-- Lists -->
+<p th:text="${#lists.size(items)}">0</p>
+```
+
+### Custom Dialects
+
+```java
+@Component
+public class CustomDialect extends AbstractProcessorDialect {
+    public CustomDialect() {
+        super("Custom Dialect", "custom", 1000);
+    }
+
+    @Override
+    public Set<IProcessor> getProcessors(String dialectPrefix) {
+        Set<IProcessor> processors = new HashSet<>();
+        processors.add(new CustomAttributeTagProcessor(dialectPrefix));
+        return processors;
+    }
+}
+```
+
+## Security Integration
+
+```html
+<!-- Security with Thymeleaf -->
+<div th:if="${#authorization.expression('hasRole(''ADMIN'')')}">
+    Admin content here
+</div>
+
+<form th:action="@{/logout}" method="post"
+      sec:authorize="isAuthenticated()">
+    <button type="submit">Logout</button>
+</form>
+```
+
+## Best Practices
+
+1. **Use th:block for Template Logic**
+```html
+<th:block th:each="user : ${users}">
+    <div th:text="${user.name}">John Doe</div>
+    <div th:text="${user.email}">john@example.com</div>
+</th:block>
+```
+
+2. **Leverage Expression Objects**
+```html
+<div th:if="${#strings.isEmpty(user.name)}">
+    <p>Please enter a name</p>
+</div>
+```
+
+3. **Use Link URLs**
+```html
+<!-- Prefer this -->
+<a th:href="@{/user/{id}(id=${user.id})}">View Profile</a>
+<!-- Over this -->
+<a th:href="'/user/' + ${user.id}">View Profile</a>
+```
+
+## Testing Thymeleaf Views
+
+```java
+@WebMvcTest(UserController.class)
+class UserControllerTest {
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Test
+    void shouldRenderUserForm() throws Exception {
+        mockMvc.perform(get("/users/create"))
+               .andExpect(status().isOk())
+               .andExpect(view().name("users/form"))
+               .andExpect(model().attributeExists("user"));
+    }
+}
+```
+
+## Conclusion
+
+Thymeleaf provides a powerful and flexible way to create dynamic web pages in Spring MVC applications. Its natural templating approach means templates can be viewed as static prototypes in browsers while still providing rich server-side capabilities.
+
+## Resources
+- [Official Thymeleaf Documentation](https://www.thymeleaf.org/documentation.html)
+- [Spring + Thymeleaf Integration Guide](https://www.thymeleaf.org/doc/tutorials/3.0/thymeleafspring.html)
+- [Thymeleaf Examples Repository](https://github.com/thymeleaf/thymeleaf-spring)
+
