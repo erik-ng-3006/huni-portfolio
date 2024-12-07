@@ -1,0 +1,270 @@
+---
+title: 'Understanding Mockito: The Complete 5W1H Guide'
+summary: 'A comprehensive guide to Mockito covering What, Why, When, Where, Who, and How of this popular Java mocking framework'
+date: '2024-12-06'
+author: 'Erik Nguyen'
+---
+
+# Understanding Mockito: The Complete 5W1H Guide
+
+## What is Mockito?
+
+Mockito is a popular mocking framework for Java applications that allows you to create and configure mock objects for unit testing. It's designed to be simple to use while providing powerful features for test-driven development (TDD).
+
+Key features include:
+- Creating mock objects
+- Stubbing method returns
+- Verifying method calls
+- Argument matching
+- Exception handling
+
+```java
+// Simple example of what Mockito does
+@Test
+void simpleExample() {
+    // Create a mock
+    List<String> mockedList = mock(List.class);
+
+    // Stub method behavior
+    when(mockedList.get(0)).thenReturn("first");
+
+    // Use mock
+    String result = mockedList.get(0);
+
+    // Verify interactions
+    verify(mockedList).get(0);
+    assertEquals("first", result);
+}
+```
+
+## Why Use Mockito?
+
+1. **Isolation**: Test components in isolation without dependencies
+2. **Predictability**: Control behavior of dependencies for consistent testing
+3. **Speed**: Avoid slow external systems like databases or APIs
+4. **Simplicity**: Clean, readable syntax compared to other mocking frameworks
+5. **Flexibility**: Support for various testing scenarios and patterns
+
+```java
+// Example showing why Mockito is useful
+public class UserService {
+    private final UserRepository repository;
+    private final EmailService emailService;
+
+    @Test
+    void demonstrateWhyMockito() {
+        // Mock dependencies
+        UserRepository mockRepo = mock(UserRepository.class);
+        EmailService mockEmail = mock(EmailService.class);
+
+        // Create service with mocks
+        UserService service = new UserService(mockRepo, mockEmail);
+
+        // Test without real database or email server
+        when(mockRepo.findById(1L)).thenReturn(Optional.of(new User("test@test.com")));
+        service.sendWelcomeEmail(1L);
+
+        // Verify email was "sent" without actually sending
+        verify(mockEmail).sendEmail(any(String.class), any(String.class));
+    }
+}
+```
+
+## When to Use Mockito?
+
+Use Mockito in these scenarios:
+1. **Unit Testing**: When testing individual components
+2. **External Dependencies**: When dealing with databases, web services, or APIs
+3. **Complex Logic**: When testing business logic with multiple dependencies
+4. **Hard-to-Reproduce States**: When testing error conditions or edge cases
+5. **Performance-Critical Tests**: When real dependencies would slow down tests
+
+```java
+// Example of when to use Mockito
+@Test
+void whenToUseMockito() {
+    // Mock external payment gateway
+    PaymentGateway mockGateway = mock(PaymentGateway.class);
+
+    // Test payment failure scenario (hard to reproduce with real gateway)
+    when(mockGateway.processPayment(any())).thenThrow(new PaymentFailedException());
+
+    PaymentService service = new PaymentService(mockGateway);
+    assertThrows(PaymentFailedException.class, () -> service.makePayment(new Payment()));
+}
+```
+
+## Where to Use Mockito?
+
+Mockito can be used in various testing contexts:
+1. **Unit Tests**: Primary use case
+2. **Integration Tests**: Partial mocking of components
+3. **Test-Driven Development**: During TDD cycles
+4. **Continuous Integration**: Automated test suites
+5. **Legacy Code Testing**: When adding tests to existing code
+
+```java
+// Example of where to use Mockito in different contexts
+public class MockitoUsageExamples {
+    // Unit Test
+    @Test
+    void unitTestExample() {
+        Database mockDb = mock(Database.class);
+        UserService service = new UserService(mockDb);
+        service.createUser(new User());
+        verify(mockDb).save(any(User.class));
+    }
+
+    // Integration Test with partial mock
+    @Test
+    void integrationTestExample() {
+        UserService serviceSpy = spy(new UserService(new RealDatabase()));
+        doNothing().when(serviceSpy).sendNotification(any());
+        serviceSpy.createUser(new User());
+    }
+}
+```
+
+## Who Should Use Mockito?
+
+Mockito is beneficial for:
+1. Java Developers
+2. Test Engineers
+3. Quality Assurance Teams
+4. Development Teams practicing TDD
+5. Anyone writing unit tests in Java
+
+## How to Use Mockito?
+
+### 1. Setup
+
+```xml
+<!-- Maven dependency -->
+<dependency>
+    <groupId>org.mockito</groupId>
+    <artifactId>mockito-core</artifactId>
+    <version>5.8.0</version>
+    <scope>test</scope>
+</dependency>
+```
+
+### 2. Basic Mocking
+
+```java
+public class MockitoBasics {
+    @Test
+    void basicMocking() {
+        // Create mock
+        List<String> mockedList = mock(List.class);
+
+        // Define behavior
+        when(mockedList.get(0)).thenReturn("first");
+        when(mockedList.size()).thenReturn(1);
+
+        // Use mock
+        assertEquals("first", mockedList.get(0));
+        assertEquals(1, mockedList.size());
+    }
+}
+```
+
+### 3. Argument Matchers
+
+```java
+public class ArgumentMatchingExample {
+    @Test
+    void argumentMatching() {
+        List<String> mockedList = mock(List.class);
+
+        // Using matchers
+        when(mockedList.get(anyInt())).thenReturn("element");
+        when(mockedList.contains(argThat(str -> str.length() > 5))).thenReturn(true);
+
+        assertTrue(mockedList.contains("longstring"));
+        assertEquals("element", mockedList.get(999));
+    }
+}
+```
+
+### 4. Verification
+
+```java
+public class VerificationExample {
+    @Test
+    void verificationExamples() {
+        List<String> mockedList = mock(List.class);
+
+        // Interact with mock
+        mockedList.add("one");
+        mockedList.add("two");
+        mockedList.clear();
+
+        // Verify interactions
+        verify(mockedList).add("one");
+        verify(mockedList, times(2)).add(anyString());
+        verify(mockedList).clear();
+        verify(mockedList, never()).get(anyInt());
+    }
+}
+```
+
+### 5. Stubbing Void Methods
+
+```java
+public class VoidMethodExample {
+    @Test
+    void stubbingVoidMethods() {
+        // Create mock
+        List<String> mockedList = mock(List.class);
+
+        // Stub void method
+        doThrow(new RuntimeException()).when(mockedList).clear();
+
+        // Test exception
+        assertThrows(RuntimeException.class, () -> mockedList.clear());
+
+        // Alternative way
+        doNothing().when(mockedList).clear();
+        mockedList.clear(); // No exception
+    }
+}
+```
+
+## Best Practices
+
+1. **Don't Mock Everything**
+```java
+// Bad: Mocking value objects
+Date mockedDate = mock(Date.class); // Don't do this
+// Good: Use real objects for simple cases
+Date realDate = new Date();
+```
+
+2. **Use Meaningful Names**
+```java
+// Bad
+List<String> m = mock(List.class);
+// Good
+List<String> mockedUserList = mock(List.class);
+```
+
+3. **Clear Verifications**
+```java
+@Test
+void verificationBestPractice() {
+    UserService userService = mock(UserService.class);
+
+    // Bad: Multiple verifications
+    verify(userService).createUser(any());
+    verify(userService).sendEmail(any());
+
+    // Good: Use inOrder
+    InOrder inOrder = inOrder(userService);
+    inOrder.verify(userService).createUser(any());
+    inOrder.verify(userService).sendEmail(any());
+}
+```
+
+## Conclusion
+
+Mockito is an essential tool for Java developers writing unit tests. Understanding the 5W1H helps you make better decisions about when and how to use mocking in your tests. Remember that mocking is a means to an end - the goal is to write maintainable, reliable tests that give you confidence in your code.
