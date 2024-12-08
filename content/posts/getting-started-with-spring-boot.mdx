@@ -1,0 +1,171 @@
+---
+title: 'Getting Started with Spring Boot: Your First REST API in 15 Minutes'
+date: '2024-12-08'
+summary: 'Learn how to create your first REST API using Spring Boot in just 15 minutes. Perfect for beginners looking to start their Spring Boot journey.'
+author: 'Erik Nguyen'
+---
+
+# Getting Started with Spring Boot: Your First REST API in 15 Minutes
+
+Spring Boot has revolutionized Java development by making it incredibly easy to create production-ready applications. In this tutorial, we'll build a simple REST API for managing books in just 15 minutes!
+
+## Prerequisites
+
+Before we begin, make sure you have:
+- Java 17 or later installed
+- Your favorite IDE (IntelliJ IDEA, Eclipse, or VS Code)
+- Basic knowledge of Java
+
+<Callout type="info">
+    If you're using IntelliJ IDEA Ultimate, you can use the Spring Initializr integration directly from the IDE by selecting `File > New > Project > Spring Initializr`.
+</Callout>
+
+## Step 1: Setting Up the Project
+
+Visit [Spring Initializr](https://start.spring.io/) and create a new project with these settings:
+- Project: Maven
+- Language: Java
+- Spring Boot: 3.2.0
+- Group: com.example
+- Artifact: bookapi
+- Dependencies: Spring Web, Spring Data JPA, H2 Database
+
+Click "Generate" and extract the downloaded zip file.
+
+## Step 2: Create the Book Model
+
+Create a new class `Book.java` in `src/main/java/com/example/bookapi/model`:
+
+```java
+package com.example.bookapi.model;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+
+@Entity
+public class Book {
+    @Id
+    @GeneratedValue
+    private Long id;
+    private String title;
+    private String author;
+    private String isbn;
+
+    // Getters and Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
+    public String getAuthor() { return author; }
+    public void setAuthor(String author) { this.author = author; }
+    public String getIsbn() { return isbn; }
+    public void setIsbn(String isbn) { this.isbn = isbn; }
+}
+```
+
+## Step 3: Create the Repository
+
+Create `BookRepository.java` in `src/main/java/com/example/bookapi/repository`:
+
+```java
+package com.example.bookapi.repository;
+
+import com.example.bookapi.model.Book;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface BookRepository extends JpaRepository<Book, Long> {
+}
+```
+
+<Callout type="warning">
+    Spring Data JPA will automatically implement this interface at runtime. You don't need to write any implementation code!
+</Callout>
+
+## Step 4: Create the REST Controller
+
+Create `BookController.java` in `src/main/java/com/example/bookapi/controller`:
+
+```java
+package com.example.bookapi.controller;
+
+import com.example.bookapi.model.Book;
+import com.example.bookapi.repository.BookRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/books")
+public class BookController {
+
+    @Autowired
+    private BookRepository bookRepository;
+
+    @GetMapping
+    public List<Book> getAllBooks() {
+        return bookRepository.findAll();
+    }
+
+    @PostMapping
+    public Book createBook(@RequestBody Book book) {
+        return bookRepository.save(book);
+    }
+
+    @GetMapping("/{id}")
+    public Book getBook(@PathVariable Long id) {
+        return bookRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Book not found"));
+    }
+}
+```
+
+## Step 5: Configure the Application
+
+Update `src/main/resources/application.properties`:
+
+```properties
+spring.datasource.url=jdbc:h2:mem:bookdb
+spring.datasource.driverClassName=org.h2.Driver
+spring.datasource.username=sa
+spring.datasource.password=
+spring.h2.console.enabled=true
+```
+
+## Testing the API
+
+Start your application by running the main class `BookapiApplication`. You can now test the API using curl or Postman:
+
+### Create a new book:
+```bash
+curl -X POST http://localhost:8080/api/books \
+     -H "Content-Type: application/json" \
+     -d '{"title":"Spring Boot in Action","author":"Craig Walls","isbn":"978-1617292545"}'
+```
+
+### Get all books:
+```bash
+curl http://localhost:8080/api/books
+```
+
+<Callout type="success">
+    Congratulations! You've just created your first Spring Boot REST API. This basic setup can be extended to build more complex applications with additional features like validation, error handling, and authentication.
+</Callout>
+
+## Next Steps
+
+Now that you have a basic REST API running, you might want to explore:
+1. Adding validation to your endpoints
+2. Implementing proper error handling
+3. Adding Swagger/OpenAPI documentation
+4. Implementing service layer for business logic
+5. Adding unit and integration tests
+
+## Conclusion
+
+In just 15 minutes, we've created a functional REST API using Spring Boot. This demonstrates how Spring Boot's convention-over-configuration approach and auto-configuration features make it incredibly easy to get started with web development in Java.
+
+The complete source code for this tutorial is available on [GitHub](https://github.com/erik-ng-3006/springbootdemo).
+
+Remember, this is just the beginning of what you can do with Spring Boot. Stay tuned for more advanced tutorials!
