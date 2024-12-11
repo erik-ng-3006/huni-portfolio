@@ -1,0 +1,267 @@
+---
+title: 'Error Handling Best Practices in Spring Boot Applications'
+date: '2024-12-11'
+summary: 'A comprehensive guide to implementing robust error handling in Spring Boot applications, covering global exception handling, custom error responses, and validation.'
+author: 'Erik Nguyen'
+---
+# Error Handling Best Practices in Spring Boot Applications
+
+Proper error handling is crucial for building robust and maintainable Spring Boot applications. Well-implemented error handling not only improves the developer experience but also helps end-users better understand and resolve issues. In this comprehensive guide, we'll explore best practices for handling errors in Spring Boot applications.
+
+<Callout type="warning">
+    Never expose sensitive information in error responses, such as stack traces, database details, or internal system configurations. This could potentially expose security vulnerabilities in your application.
+</Callout>
+
+## Understanding Spring Boot's Default Error Handling
+
+Spring Boot provides a default error handling mechanism through its `ErrorController` implementation. However, for production applications, you'll want to customize this to provide more meaningful error responses.
+
+## Creating a Global Exception Handler
+
+The first step in implementing custom error handling is creating a global exception handler:
+
+```java
+@ControllerAdvice
+public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleResourceNotFoundException(
+            ResourceNotFoundException ex, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(
+            HttpStatus.NOT_FOUND.value(),
+            ex.getMessage(),
+            request.getDescription(false)
+        );
+
+        log.error("Resource not found: {}", ex.getMessage());
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleAllUncaughtException(
+            Exception ex, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(
+            HttpStatus.INTERNAL_SERVER_ERROR.value(),
+            "An unexpected error occurred",
+            request.getDescription(false)
+        );
+
+        log.error("Unexpected error occurred", ex);
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+}
+```
+
+## Standardizing Error Responses
+
+Create a consistent error response structure:
+
+```java
+@Getter
+@Setter
+public class ErrorResponse {
+    private LocalDateTime timestamp;
+    private int status;
+    private String message;
+    private String path;
+    private List<String> errors;
+
+    public ErrorResponse(int status, String message, String path) {
+        this.timestamp = LocalDateTime.now();
+        this.status = status;
+        this.message = message;
+        this.path = path;
+        this.errors = new ArrayList<>();
+    }
+}
+```
+
+## Custom Exception Classes
+
+Define custom exceptions for different types of business errors:
+
+```java
+@ResponseStatus(HttpStatus.NOT_FOUND)
+public class ResourceNotFoundException extends RuntimeException {
+    public ResourceNotFoundException(String message) {
+        super(message);
+    }
+}
+
+@ResponseStatus(HttpStatus.BAD_REQUEST)
+public class BusinessValidationException extends RuntimeException {
+    private final List<String> errors;
+
+    public BusinessValidationException(String message, List<String> errors) {
+        super(message);
+        this.errors = errors;
+    }
+}
+```
+
+## Handling Validation Errors
+
+Spring Boot provides built-in support for validation. Here's how to handle validation errors effectively:
+
+```java
+@ControllerAdvice
+public class ValidationExceptionHandler {
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidationExceptions(
+            MethodArgumentNotValidException ex, WebRequest request) {
+
+        List<String> errors = ex.getBindingResult()
+            .getFieldErrors()
+            .stream()
+            .map(error -> error.getField() + ": " + error.getDefaultMessage())
+            .collect(Collectors.toList());
+
+        ErrorResponse errorResponse = new ErrorResponse(
+            HttpStatus.BAD_REQUEST.value(),
+            "Validation failed",
+            request.getDescription(false)
+        );
+        errorResponse.setErrors(errors);
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+}
+```
+
+## Implementation Example
+
+Here's how to use these error handling components in a REST controller:
+
+```java
+@RestController
+@RequestMapping("/api/users")
+@Validated
+public class UserController {
+
+    private final UserService userService;
+
+    @GetMapping("/{id}")
+    public ResponseEntity<UserDTO> getUser(@PathVariable Long id) {
+        try {
+            UserDTO user = userService.getUserById(id);
+            return ResponseEntity.ok(user);
+        } catch (ResourceNotFoundException ex) {
+            throw ex;  // Will be handled by GlobalExceptionHandler
+        }
+    }
+
+    @PostMapping
+    public ResponseEntity<UserDTO> createUser(
+            @Valid @RequestBody UserCreateRequest request) {
+        // Validation errors will be handled by ValidationExceptionHandler
+        UserDTO user = userService.createUser(request);
+        return new ResponseEntity<>(user, HttpStatus.CREATED);
+    }
+}
+```
+
+<Callout type="info">
+    Always log errors appropriately based on their severity level. Use ERROR for unexpected errors, WARN for business validation failures, and DEBUG for validation errors.
+</Callout>
+
+## Best Practices for Error Handling
+
+### 1. Use Hierarchy in Exception Handling
+
+Create a hierarchy of exceptions to handle different types of errors:
+
+```java
+public abstract class BaseException extends RuntimeException {
+    private final String errorCode;
+
+    protected BaseException(String message, String errorCode) {
+        super(message);
+        this.errorCode = errorCode;
+    }
+}
+
+public class DatabaseException extends BaseException {
+    public DatabaseException(String message) {
+        super(message, "DB_ERROR");
+    }
+}
+```
+
+### 2. Include Error Context
+
+Provide meaningful context in error messages:
+
+```java
+throw new ResourceNotFoundException(
+    String.format("User with ID %d not found in organization %d", userId, orgId)
+);
+```
+
+### 3. Implement Request Tracing
+
+Add request tracing for better error tracking:
+
+```java
+@Component
+public class RequestTraceInterceptor implements HandlerInterceptor {
+
+    private static final String TRACE_ID = "X-Trace-ID";
+
+    @Override
+    public boolean preHandle(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            Object handler) {
+
+        String traceId = UUID.randomUUID().toString();
+        MDC.put(TRACE_ID, traceId);
+        response.setHeader(TRACE_ID, traceId);
+
+        return true;
+    }
+}
+```
+
+## Testing Error Handlers
+
+Don't forget to write tests for your error handlers:
+
+```java
+@WebMvcTest(UserController.class)
+class UserControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Test
+    void whenResourceNotFound_thenReturns404() throws Exception {
+        mockMvc.perform(get("/api/users/999"))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.status").value(404))
+            .andExpect(jsonPath("$.message").value("User with ID 999 not found"));
+    }
+}
+```
+
+## Conclusion
+
+Implementing proper error handling in Spring Boot applications is crucial for building robust and maintainable systems. By following these best practices, you can:
+
+- Provide consistent and meaningful error responses
+- Protect sensitive information
+- Improve debugging and troubleshooting
+- Enhance the overall user experience
+
+Remember to:
+- Use global exception handlers
+- Create custom exceptions for business cases
+- Implement proper logging
+- Include request tracing
+- Write comprehensive tests
+
+With these implementations in place, your application will be better equipped to handle errors gracefully and provide meaningful feedback to both users and developers.
