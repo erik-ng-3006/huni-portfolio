@@ -1,0 +1,424 @@
+---
+title: 'Implementing Authentication and Authorization with Spring Security'
+date: '2024-12-12'
+summary: 'A comprehensive guide to implementing secure authentication and authorization in Spring Boot applications using Spring Security, including JWT tokens, OAuth2, and role-based access control.'
+author: 'Erik Nguyen'
+---
+# Implementing Authentication and Authorization with Spring Security
+
+Spring Security provides robust authentication and authorization capabilities for Spring Boot applications. This guide will walk you through implementing secure user authentication and role-based access control, covering everything from basic configuration to advanced security features.
+
+<Callout type="warning">
+    Never store passwords in plain text! Always use strong password encoders like BCrypt, and ensure sensitive data is properly encrypted both in transit and at rest.
+</Callout>
+
+## Basic Security Configuration
+
+Let's start with a basic Spring Security configuration:
+
+```java
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/public/**").permitAll()
+                .anyRequest().authenticated()
+            )
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+            .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+}
+```
+
+## User Entity and Repository
+
+Define the user entity with roles:
+
+```java
+@Entity
+@Table(name = "users")
+public class User {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(unique = true, nullable = false)
+    private String username;
+
+    @Column(nullable = false)
+    private String password;
+
+    @Column(nullable = false)
+    private String email;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "user_roles",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private Set<Role> roles = new HashSet<>();
+}
+
+@Entity
+@Table(name = "roles")
+public class Role {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Enumerated(EnumType.STRING)
+    private ERole name;
+}
+```
+
+## JWT Authentication Implementation
+
+### JWT Utility Class
+
+```java
+@Component
+public class JwtUtils {
+
+    @Value("${app.jwt.secret}")
+    private String jwtSecret;
+
+    @Value("${app.jwt.expiration}")
+    private int jwtExpirationMs;
+
+    public String generateJwtToken(Authentication authentication) {
+        UserDetailsImpl userPrincipal = (UserDetailsImpl) authentication.getPrincipal();
+
+        return Jwts.builder()
+            .setSubject(userPrincipal.getUsername())
+            .setIssuedAt(new Date())
+            .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
+            .signWith(SignatureAlgorithm.HS512, jwtSecret)
+            .compact();
+    }
+
+    public String getUserNameFromJwtToken(String token) {
+        return Jwts.parser()
+            .setSigningKey(jwtSecret)
+            .parseClaimsJws(token)
+            .getBody()
+            .getSubject();
+    }
+
+    public boolean validateJwtToken(String authToken) {
+        try {
+            Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(authToken);
+            return true;
+        } catch (SignatureException e) {
+            log.error("Invalid JWT signature: {}", e.getMessage());
+        } catch (MalformedJwtException e) {
+            log.error("Invalid JWT token: {}", e.getMessage());
+        } catch (ExpiredJwtException e) {
+            log.error("JWT token is expired: {}", e.getMessage());
+        } catch (UnsupportedJwtException e) {
+            log.error("JWT token is unsupported: {}", e.getMessage());
+        } catch (IllegalArgumentException e) {
+            log.error("JWT claims string is empty: {}", e.getMessage());
+        }
+
+        return false;
+    }
+}
+```
+
+### JWT Authentication Filter
+
+```java
+@Component
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    @Autowired
+    private JwtUtils jwtUtils;
+
+    @Autowired
+    private UserDetailsServiceImpl userDetailsService;
+
+    @Override
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain) throws ServletException, IOException {
+        try {
+            String jwt = parseJwt(request);
+            if (jwt != null && jwtUtils.validateJwtToken(jwt)) {
+                String username = jwtUtils.getUserNameFromJwtToken(jwt);
+
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(
+                        userDetails,
+                        null,
+                        userDetails.getAuthorities()
+                    );
+
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
+        } catch (Exception e) {
+            log.error("Cannot set user authentication: {}", e.getMessage());
+        }
+
+        filterChain.doFilter(request, response);
+    }
+
+    private String parseJwt(HttpServletRequest request) {
+        String headerAuth = request.getHeader("Authorization");
+
+        if (StringUtils.hasText(headerAuth) && headerAuth.startsWith("Bearer ")) {
+            return headerAuth.substring(7);
+        }
+
+        return null;
+    }
+}
+```
+
+## Authentication Controller
+
+```java
+@RestController
+@RequestMapping("/api/auth")
+public class AuthController {
+
+    @Autowired
+    private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtUtils jwtUtils;
+
+    @PostMapping("/login")
+    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+        Authentication authentication = authenticationManager.authenticate(
+            new UsernamePasswordAuthenticationToken(
+                loginRequest.getUsername(),
+                loginRequest.getPassword()
+            )
+        );
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        String jwt = jwtUtils.generateJwtToken(authentication);
+
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        List<String> roles = userDetails.getAuthorities().stream()
+            .map(GrantedAuthority::getAuthority)
+            .collect(Collectors.toList());
+
+        return ResponseEntity.ok(new JwtResponse(jwt,
+            userDetails.getId(),
+            userDetails.getUsername(),
+            userDetails.getEmail(),
+            roles));
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
+        if (userRepository.existsByUsername(signUpRequest.getUsername())) {
+            return ResponseEntity.badRequest()
+                .body(new MessageResponse("Error: Username is already taken!"));
+        }
+
+        User user = new User(
+            signUpRequest.getUsername(),
+            passwordEncoder.encode(signUpRequest.getPassword()),
+            signUpRequest.getEmail()
+        );
+
+        Set<Role> roles = new HashSet<>();
+        Role userRole = roleRepository.findByName(ERole.ROLE_USER)
+            .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+        roles.add(userRole);
+
+        user.setRoles(roles);
+        userRepository.save(user);
+
+        return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+    }
+}
+```
+
+<Callout type="info">
+    Implement rate limiting and account locking mechanisms to prevent brute-force attacks. Consider using Spring Security's built-in features or third-party solutions like Bucket4j.
+</Callout>
+
+## Method-Level Security
+
+Enable method-level security using annotations:
+
+```java
+@Configuration
+@EnableMethodSecurity
+public class MethodSecurityConfig {
+    // Configuration if needed
+}
+
+@Service
+public class UserService {
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    @PreAuthorize("hasRole('USER') and #username == authentication.principal.username")
+    public UserDetails getUserProfile(String username) {
+        return userRepository.findByUsername(username)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    }
+}
+```
+
+## OAuth2 Integration
+
+Add OAuth2 support for social login:
+
+```java
+@Configuration
+public class OAuth2Config extends WebSecurityConfigurerAdapter {
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http
+            .oauth2Login(oauth2 -> oauth2
+                .authorizationEndpoint(authorization -> authorization
+                    .baseUri("/oauth2/authorize")
+                )
+                .redirectionEndpoint(redirection -> redirection
+                    .baseUri("/oauth2/callback/*")
+                )
+                .userInfoEndpoint(userInfo -> userInfo
+                    .userService(oAuth2UserService)
+                )
+            );
+    }
+}
+```
+
+## Testing Security Configuration
+
+```java
+@SpringBootTest
+@AutoConfigureMockMvc
+public class SecurityConfigTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Test
+    public void whenPublicEndpoint_thenSuccess() throws Exception {
+        mockMvc.perform(get("/api/public/test"))
+            .andExpect(status().isOk());
+    }
+
+    @Test
+    public void whenPrivateEndpoint_thenUnauthorized() throws Exception {
+        mockMvc.perform(get("/api/private/test"))
+            .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    public void whenUserEndpoint_thenSuccess() throws Exception {
+        mockMvc.perform(get("/api/user/profile"))
+            .andExpect(status().isOk());
+    }
+}
+```
+
+## Security Best Practices
+
+1. **Password Storage**
+- Use BCrypt or Argon2 for password hashing
+- Implement password complexity requirements
+- Enforce regular password changes
+
+2. **Session Management**
+- Use stateless authentication with JWT
+- Implement token refresh mechanism
+- Set appropriate token expiration times
+
+3. **CORS and CSRF**
+```java
+@Configuration
+public class WebSecurityConfig {
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Arrays.asList("https://allowed-domain.com"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+}
+```
+
+4. **Error Handling**
+```java
+@RestControllerAdvice
+public class SecurityExceptionHandler {
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<?> handleAccessDeniedException(AccessDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+            .body(new ErrorResponse("Access denied"));
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<?> handleAuthenticationException(AuthenticationException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+            .body(new ErrorResponse("Authentication failed"));
+    }
+}
+```
+
+## Conclusion
+
+Implementing robust security in Spring Boot applications requires careful consideration of various aspects:
+
+- Proper authentication mechanisms
+- Role-based access control
+- Secure password storage
+- Token-based authentication
+- OAuth2 integration
+- Method-level security
+- Comprehensive testing
+
+Remember to:
+- Keep dependencies updated
+- Monitor security advisories
+- Implement logging and monitoring
+- Regularly review and update security configurations
+- Follow security best practices
+
+By following these guidelines and implementing the provided examples, you can create a secure Spring Boot application that protects your users' data and prevents unauthorized access.
