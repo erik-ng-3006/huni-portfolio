@@ -1,0 +1,229 @@
+---
+title: 'Understanding Spring Boot Controllers and RequestMapping: A Complete Guide'
+date: '2024-12-15'
+summary: 'A comprehensive guide to Spring Boot Controllers and RequestMapping, covering different types of request mappings, path variables, request parameters, response patterns, and error handling. Perfect for developers looking to master REST API development with Spring Boot.'
+author: 'Erik Nguyen'
+---
+
+# Understanding Spring Boot Controllers and RequestMapping: A Complete Guide
+
+When building REST APIs with Spring Boot, Controllers and RequestMapping are fundamental concepts that form the backbone of your application's request handling. In this comprehensive guide, we'll explore these concepts in depth and learn how to implement them effectively.
+
+## Introduction to Spring Controllers
+
+At its core, a Spring Controller is a class that handles incoming HTTP requests and determines how they should be processed. Controllers are marked with the `@Controller` or `@RestController` annotation, with the latter being specifically designed for REST APIs.
+
+Let's start with a basic example:
+
+```java
+@RestController
+@RequestMapping("/api/v1")
+public class UserController {
+
+    private final UserService userService;
+
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
+
+    @GetMapping("/users")
+    public List<User> getAllUsers() {
+        return userService.findAll();
+    }
+}
+```
+
+## Different Types of Request Mappings
+
+Spring Boot provides several annotations for handling different HTTP methods. Let's explore each with practical examples:
+
+### 1. Basic RequestMapping
+
+```java
+// Generic request mapping
+@RequestMapping(value = "/users", method = RequestMethod.GET)
+public List<User> getUsers() {
+    return userService.findAll();
+}
+```
+
+### 2. Method-Specific Annotations
+
+```java
+// GET request
+@GetMapping("/users/{id}")
+public User getUser(@PathVariable Long id) {
+    return userService.findById(id);
+}
+
+// POST request
+@PostMapping("/users")
+public User createUser(@RequestBody User user) {
+    return userService.save(user);
+}
+
+// PUT request
+@PutMapping("/users/{id}")
+public User updateUser(@PathVariable Long id, @RequestBody User user) {
+    return userService.update(id, user);
+}
+
+// DELETE request
+@DeleteMapping("/users/{id}")
+public void deleteUser(@PathVariable Long id) {
+    userService.delete(id);
+}
+```
+
+## Path Variables vs Request Parameters
+
+Understanding the difference between path variables and request parameters is crucial for designing clean APIs.
+
+### Path Variables
+Path variables are part of the URL path and are typically used to identify a specific resource:
+
+```java
+@GetMapping("/users/{id}/posts/{postId}")
+public Post getUserPost(
+    @PathVariable Long id,
+    @PathVariable Long postId
+) {
+    return userService.findUserPost(id, postId);
+}
+```
+
+### Request Parameters
+Request parameters are appended to the URL after a question mark and are optional by default:
+
+```java
+@GetMapping("/users")
+public List<User> searchUsers(
+    @RequestParam(required = false) String name,
+    @RequestParam(defaultValue = "0") int page,
+    @RequestParam(defaultValue = "10") int size
+) {
+    return userService.searchUsers(name, page, size);
+}
+```
+
+## Response Entity Patterns
+
+ResponseEntity gives you fine-grained control over the HTTP response, including status codes, headers, and body:
+
+```java
+@GetMapping("/users/{id}")
+public ResponseEntity<User> getUser(@PathVariable Long id) {
+    try {
+        User user = userService.findById(id);
+        return ResponseEntity
+            .ok()
+            .header("Custom-Header", "Value")
+            .body(user);
+    } catch (UserNotFoundException e) {
+        return ResponseEntity.notFound().build();
+    }
+}
+```
+
+### Common Response Patterns
+
+```java
+// Success response with created status
+@PostMapping("/users")
+public ResponseEntity<User> createUser(@RequestBody User user) {
+    User savedUser = userService.save(user);
+    URI location = ServletUriComponentsBuilder
+        .fromCurrentRequest()
+        .path("/{id}")
+        .buildAndExpand(savedUser.getId())
+        .toUri();
+    return ResponseEntity.created(location).body(savedUser);
+}
+
+// No content response
+@DeleteMapping("/users/{id}")
+public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+    userService.delete(id);
+    return ResponseEntity.noContent().build();
+}
+```
+
+## Error Handling
+
+Spring Boot offers several ways to handle errors effectively. Here's a comprehensive approach:
+
+### 1. Global Exception Handler
+
+```java
+@ControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException ex) {
+        ErrorResponse error = new ErrorResponse(
+            HttpStatus.NOT_FOUND.value(),
+            "User not found",
+            ex.getMessage()
+        );
+        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<ErrorResponse> handleValidation(ValidationException ex) {
+        ErrorResponse error = new ErrorResponse(
+            HttpStatus.BAD_REQUEST.value(),
+            "Validation failed",
+            ex.getMessage()
+        );
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleGenericError(Exception ex) {
+        ErrorResponse error = new ErrorResponse(
+            HttpStatus.INTERNAL_SERVER_ERROR.value(),
+            "Internal server error",
+            ex.getMessage()
+        );
+        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+}
+```
+
+### 2. Custom Error Response Class
+
+```java
+public class ErrorResponse {
+    private int status;
+    private String error;
+    private String message;
+    private LocalDateTime timestamp;
+
+    public ErrorResponse(int status, String error, String message) {
+        this.status = status;
+        this.error = error;
+        this.message = message;
+        this.timestamp = LocalDateTime.now();
+    }
+
+    // Getters and setters
+}
+```
+
+## Best Practices and Tips
+
+1. **Use Meaningful URLs**: Design your URLs to be descriptive and follow REST conventions
+2. **Version Your APIs**: Include version information in the URL or headers
+3. **Validate Input**: Use Spring's validation framework to validate request bodies
+4. **Document Your APIs**: Use Swagger/OpenAPI for API documentation
+5. **Use DTOs**: Separate your API models from domain models using DTOs
+
+## Conclusion
+
+Understanding Spring Boot Controllers and RequestMapping is essential for building robust REST APIs. By following these patterns and best practices, you can create clean, maintainable, and efficient web applications. Remember to handle errors gracefully and provide meaningful responses to your API consumers.
+
+## Additional Resources
+
+- [Spring Boot Official Documentation](https://docs.spring.io/spring-boot/docs/current/reference/html/)
+- [Spring Framework Documentation](https://docs.spring.io/spring-framework/reference/)
+- [REST API Design Best Practices](https://restfulapi.net/)
