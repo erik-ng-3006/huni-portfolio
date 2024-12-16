@@ -1,0 +1,361 @@
+---
+title: 'Unit Testing Spring Boot Applications: A Complete Guide'
+date: '2024-12-16'
+summary: 'Learn how to effectively test Spring Boot applications, including controller tests, service mocking, repository testing, and test configuration. Master the art of writing reliable unit tests for your Spring Boot applications.'
+author: 'Erik Nguyen'
+---
+
+# Unit Testing Spring Boot Applications: A Complete Guide
+
+Testing is a crucial aspect of software development, and Spring Boot provides excellent support for testing at different levels. In this comprehensive guide, we'll explore how to effectively test various components of your Spring Boot application.
+
+## Test Dependencies
+
+First, let's ensure we have the necessary dependencies in our `pom.xml`:
+
+```xml
+<dependencies>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-test</artifactId>
+        <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>com.h2database</groupId>
+        <artifactId>h2</artifactId>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+```
+
+## Testing Controllers
+
+Let's start with testing REST controllers. We'll use `@WebMvcTest` for lightweight MVC tests focusing on web layer components.
+
+### Sample Controller
+
+```java
+@RestController
+@RequestMapping("/api/users")
+public class UserController {
+
+    private final UserService userService;
+
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<User> getUser(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.findById(id));
+    }
+
+    @PostMapping
+    public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                           .body(userService.save(user));
+    }
+}
+```
+
+### Controller Test
+
+```java
+@WebMvcTest(UserController.class)
+class UserControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private UserService userService;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Test
+    void shouldReturnUserWhenExists() throws Exception {
+        // Given
+        User user = new User(1L, "John Doe", "john@example.com");
+        when(userService.findById(1L)).thenReturn(user);
+
+        // When & Then
+        mockMvc.perform(get("/api/users/1")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.name").value("John Doe"))
+                .andExpect(jsonPath("$.email").value("john@example.com"))
+                .andDo(print());
+    }
+
+    @Test
+    void shouldCreateNewUser() throws Exception {
+        // Given
+        User userToCreate = new User(null, "Jane Doe", "jane@example.com");
+        User createdUser = new User(1L, "Jane Doe", "jane@example.com");
+        when(userService.save(any(User.class))).thenReturn(createdUser);
+
+        // When & Then
+        mockMvc.perform(post("/api/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(userToCreate)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.name").value("Jane Doe"));
+    }
+}
+```
+
+## Mocking Services
+
+Service layer testing involves unit testing your business logic while mocking dependencies.
+
+### Sample Service
+
+```java
+@Service
+public class UserService {
+
+    private final UserRepository userRepository;
+    private final EmailService emailService;
+
+    public UserService(UserRepository userRepository, EmailService emailService) {
+        this.userRepository = userRepository;
+        this.emailService = emailService;
+    }
+
+    public User createUser(User user) {
+        User savedUser = userRepository.save(user);
+        emailService.sendWelcomeEmail(savedUser.getEmail());
+        return savedUser;
+    }
+}
+```
+
+### Service Test
+
+```java
+@ExtendWith(MockitoExtension.class)
+class UserServiceTest {
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private EmailService emailService;
+
+    @InjectMocks
+    private UserService userService;
+
+    @Test
+    void shouldCreateUserAndSendEmail() {
+        // Given
+        User user = new User(null, "John Doe", "john@example.com");
+        User savedUser = new User(1L, "John Doe", "john@example.com");
+        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+        doNothing().when(emailService).sendWelcomeEmail(anyString());
+
+        // When
+        User result = userService.createUser(user);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(savedUser.getId(), result.getId());
+        verify(emailService).sendWelcomeEmail("john@example.com");
+    }
+}
+```
+
+## Testing Repositories
+
+For repository tests, we'll use `@DataJpaTest` which provides a convenient way to test JPA repositories.
+
+### Repository Test
+
+```java
+@DataJpaTest
+class UserRepositoryTest {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private TestEntityManager entityManager;
+
+    @Test
+    void shouldSaveUser() {
+        // Given
+        User user = new User(null, "John Doe", "john@example.com");
+
+        // When
+        User savedUser = userRepository.save(user);
+
+        // Then
+        assertNotNull(savedUser.getId());
+        assertEquals("John Doe", savedUser.getName());
+    }
+
+    @Test
+    void shouldFindUserByEmail() {
+        // Given
+        User user = new User(null, "John Doe", "john@example.com");
+        entityManager.persist(user);
+        entityManager.flush();
+
+        // When
+        Optional<User> found = userRepository.findByEmail("john@example.com");
+
+        // Then
+        assertTrue(found.isPresent());
+        assertEquals("John Doe", found.get().getName());
+    }
+}
+```
+
+## Test Configuration
+
+### Application-Test Properties
+
+Create `application-test.properties` or `application-test.yml` in your test resources:
+
+```properties
+# application-test.properties
+spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
+spring.datasource.driver-class-name=org.h2.Driver
+spring.datasource.username=sa
+spring.datasource.password=
+
+spring.jpa.hibernate.ddl-auto=create-drop
+spring.jpa.show-sql=true
+```
+
+### Custom Test Configuration
+
+```java
+@TestConfiguration
+public class TestConfig {
+
+    @Bean
+    public EmailService emailService() {
+        return new MockEmailService();
+    }
+
+    @Bean
+    @Primary
+    public ObjectMapper testObjectMapper() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        return objectMapper;
+    }
+}
+```
+
+### Integration Test Example
+
+```java
+@SpringBootTest
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
+class UserIntegrationTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @BeforeEach
+    void setup() {
+        userRepository.deleteAll();
+    }
+
+    @Test
+    void shouldCreateAndRetrieveUser() throws Exception {
+        // Create user
+        User user = new User(null, "John Doe", "john@example.com");
+
+        MvcResult createResult = mockMvc.perform(post("/api/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(new ObjectMapper().writeValueAsString(user)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        // Get created user ID
+        String response = createResult.getResponse().getContentAsString();
+        Long userId = JsonPath.read(response, "$.id");
+
+        // Verify user retrieval
+        mockMvc.perform(get("/api/users/" + userId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("John Doe"))
+                .andExpect(jsonPath("$.email").value("john@example.com"));
+    }
+}
+```
+
+## Best Practices
+
+1. **Test Naming**: Use descriptive test names that indicate the scenario being tested
+```java
+@Test
+void shouldReturnNotFoundWhenUserDoesNotExist()
+@Test
+void shouldThrowExceptionWhenEmailIsInvalid()
+```
+
+2. **Test Organization**: Follow the AAA (Arrange-Act-Assert) pattern
+```java
+@Test
+void shouldCalculateOrderTotal() {
+    // Arrange
+    Order order = new Order();
+    order.addItem(new Item("Book", 10.0));
+    order.addItem(new Item("Pen", 5.0));
+
+    // Act
+    double total = order.calculateTotal();
+
+    // Assert
+    assertEquals(15.0, total, 0.01);
+}
+```
+
+3. **Use Test Fixtures**: Create helper methods for common test data setup
+```java
+private User createTestUser() {
+    return new User(null, "Test User", "test@example.com");
+}
+```
+
+## Common Testing Annotations
+
+```java
+@SpringBootTest         // Full application context
+@WebMvcTest            // MVC layer testing
+@DataJpaTest           // Repository layer testing
+@MockBean              // Add mock to Spring context
+@SpyBean               // Add spy to Spring context
+@AutoConfigureMockMvc  // Configure MockMvc
+@ActiveProfiles        // Specify active profile
+@Sql                   // Execute SQL scripts
+@Transactional        // Roll back after each test
+```
+
+## Conclusion
+
+Effective testing is crucial for maintaining a reliable Spring Boot application. By following these patterns and practices, you can create a comprehensive test suite that helps ensure your application's quality and reliability.
+
+Remember to:
+- Write tests at different levels (unit, integration)
+- Mock dependencies appropriately
+- Use appropriate test configurations
+- Follow testing best practices
+- Maintain test code quality
+
+## Additional Resources
+
+- [Spring Boot Testing Documentation](https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.testing)
+- [JUnit 5 User Guide](https://junit.org/junit5/docs/current/user-guide/)
+- [Mockito Documentation](https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html)
