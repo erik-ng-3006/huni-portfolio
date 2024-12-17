@@ -1,0 +1,341 @@
+---
+title: 'Mastering API Documentation with Springfox (Swagger): A Complete Guide'
+date: '2024-12-17'
+summary: 'Learn how to effectively document your Spring Boot APIs using Springfox (Swagger). This comprehensive guide covers setup, configuration, annotations, and best practices for creating clear and maintainable API documentation.'
+author: 'Erik Nguyen'
+---
+
+# Mastering API Documentation with Springfox (Swagger)
+
+API documentation is crucial for developers who consume your services. Springfox brings the power of Swagger/OpenAPI to Spring Boot applications, automatically generating comprehensive API documentation. Let's explore how to implement and optimize Springfox in your Spring Boot application.
+
+## Understanding Springfox and Swagger
+
+Springfox is a library that automates the generation of machine and human-readable specifications for JSON APIs written using Spring. It works by examining your application at runtime to infer API semantics based on spring configurations, class structure, and various annotations.
+
+## Getting Started
+
+First, let's add the necessary dependencies to your `pom.xml`:
+
+```xml
+<dependencies>
+    <!-- Springfox Swagger 3 -->
+    <dependency>
+        <groupId>io.springfox</groupId>
+        <artifactId>springfox-boot-starter</artifactId>
+        <version>3.0.0</version>
+    </dependency>
+</dependencies>
+```
+
+## Basic Configuration
+
+Let's create a basic Swagger configuration:
+
+```java
+@Configuration
+@EnableSwagger2
+public class SwaggerConfig {
+
+    @Bean
+    public Docket api() {
+        return new Docket(DocumentationType.SWAGGER_2)
+                .select()
+                .apis(RequestHandlerSelectors.basePackage("com.yourcompany.api"))
+                .paths(PathSelectors.any())
+                .build()
+                .apiInfo(apiInfo());
+    }
+
+    private ApiInfo apiInfo() {
+        return new ApiInfoBuilder()
+                .title("Your API Documentation")
+                .description("Description of your API")
+                .version("1.0.0")
+                .contact(new Contact("Your Name", "website", "email"))
+                .build();
+    }
+}
+```
+
+## Documenting Controllers and Models
+
+Let's look at a comprehensive example of documenting a REST controller:
+
+```java
+@RestController
+@RequestMapping("/api/users")
+@Api(tags = "User Management", description = "Operations about users")
+public class UserController {
+
+    private final UserService userService;
+
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
+
+    @ApiOperation(
+        value = "Create a new user",
+        notes = "Creates a new user in the system with the provided information"
+    )
+    @ApiResponses({
+        @ApiResponse(code = 201, message = "User successfully created"),
+        @ApiResponse(code = 400, message = "Invalid input"),
+        @ApiResponse(code = 409, message = "User already exists")
+    })
+    @PostMapping
+    public ResponseEntity<User> createUser(
+        @ApiParam(value = "User object to be created", required = true)
+        @Valid @RequestBody UserDTO userDTO
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                           .body(userService.createUser(userDTO));
+    }
+
+    @ApiOperation(
+        value = "Get user by ID",
+        response = User.class
+    )
+    @ApiResponses({
+        @ApiResponse(code = 200, message = "Successfully retrieved user"),
+        @ApiResponse(code = 404, message = "User not found")
+    })
+    @GetMapping("/{id}")
+    public ResponseEntity<User> getUser(
+        @ApiParam(value = "ID of user to retrieve", required = true)
+        @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(userService.findById(id));
+    }
+}
+```
+
+Let's document our model classes:
+
+```java
+@ApiModel(description = "User Data Transfer Object")
+public class UserDTO {
+
+    @ApiModelProperty(
+        value = "User's email address",
+        example = "john.doe@example.com",
+        required = true
+    )
+    @Email
+    private String email;
+
+    @ApiModelProperty(
+        value = "User's full name",
+        example = "John Doe",
+        required = true
+    )
+    @Size(min = 2, max = 100)
+    private String fullName;
+
+    @ApiModelProperty(
+        value = "User's role in the system",
+        example = "ADMIN",
+        allowableValues = "USER,ADMIN,MANAGER"
+    )
+    private String role;
+
+    // Getters and setters
+}
+```
+
+## Advanced Configuration
+
+Here's an example of advanced Swagger configuration with security and customization:
+
+```java
+@Configuration
+@EnableSwagger2
+public class SwaggerConfig {
+
+    @Bean
+    public Docket api() {
+        return new Docket(DocumentationType.SWAGGER_2)
+                .select()
+                .apis(RequestHandlerSelectors.basePackage("com.yourcompany.api"))
+                .paths(PathSelectors.ant("/api/**"))
+                .build()
+                .apiInfo(apiInfo())
+                .securityContexts(Collections.singletonList(securityContext()))
+                .securitySchemes(Collections.singletonList(apiKey()))
+                .useDefaultResponseMessages(false)
+                .globalResponseMessage(RequestMethod.GET, globalResponseMessages())
+                .globalOperationParameters(globalParameters());
+    }
+
+    private ApiKey apiKey() {
+        return new ApiKey("JWT", "Authorization", "header");
+    }
+
+    private SecurityContext securityContext() {
+        return SecurityContext.builder()
+                .securityReferences(defaultAuth())
+                .forPaths(PathSelectors.regex("/api.*"))
+                .build();
+    }
+
+    private List<SecurityReference> defaultAuth() {
+        AuthorizationScope authorizationScope =
+            new AuthorizationScope("global", "accessEverything");
+        AuthorizationScope[] authorizationScopes =
+            new AuthorizationScope[1];
+        authorizationScopes[0] = authorizationScope;
+        return Collections.singletonList(
+            new SecurityReference("JWT", authorizationScopes));
+    }
+
+    private List<Parameter> globalParameters() {
+        return Collections.singletonList(
+            new ParameterBuilder()
+                .name("tenantId")
+                .description("Tenant identifier")
+                .modelRef(new ModelRef("string"))
+                .parameterType("header")
+                .required(true)
+                .build());
+    }
+}
+```
+
+## Error Handling and Response Documentation
+
+Let's implement comprehensive error handling with Swagger documentation:
+
+```java
+@ControllerAdvice
+@Api(tags = "Error Handling")
+public class GlobalExceptionHandler {
+
+    @ApiOperation(
+        value = "Handle Resource Not Found",
+        notes = "Returns 404 with error details when a resource is not found"
+    )
+    @ExceptionHandler(ResourceNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ApiResponses({
+        @ApiResponse(code = 404, message = "Resource not found",
+                    response = ErrorResponse.class)
+    })
+    public ResponseEntity<ErrorResponse> handleResourceNotFound(
+            ResourceNotFoundException ex) {
+        ErrorResponse error = new ErrorResponse(
+            HttpStatus.NOT_FOUND.value(),
+            "Resource not found",
+            ex.getMessage()
+        );
+        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
+    }
+
+    @ApiOperation(
+        value = "Handle Validation Errors",
+        notes = "Returns 400 with validation error details"
+    )
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ApiResponses({
+        @ApiResponse(code = 400, message = "Validation failed",
+                    response = ValidationErrorResponse.class)
+    })
+    public ResponseEntity<ValidationErrorResponse> handleValidationErrors(
+            MethodArgumentNotValidException ex) {
+        ValidationErrorResponse error = new ValidationErrorResponse();
+        error.setStatus(HttpStatus.BAD_REQUEST.value());
+        error.setMessage("Validation failed");
+
+        ex.getBindingResult().getFieldErrors().forEach(fieldError ->
+            error.addValidationError(
+                fieldError.getField(),
+                fieldError.getDefaultMessage()
+            )
+        );
+
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+}
+
+@ApiModel(description = "Standard error response")
+public class ErrorResponse {
+    @ApiModelProperty(value = "HTTP status code", example = "404")
+    private int status;
+
+    @ApiModelProperty(value = "Error message", example = "Resource not found")
+    private String message;
+
+    @ApiModelProperty(value = "Detailed error description")
+    private String detail;
+
+    @ApiModelProperty(value = "Timestamp of the error")
+    private LocalDateTime timestamp = LocalDateTime.now();
+
+    // Constructor, getters, and setters
+}
+```
+
+## Best Practices
+
+1. **Consistent Documentation**
+```java
+// Group related endpoints
+@Api(tags = "User Management")
+
+// Provide meaningful operation descriptions
+@ApiOperation(
+    value = "Short description",
+    notes = "Detailed explanation"
+)
+
+// Document possible responses
+@ApiResponses({
+    @ApiResponse(code = 200, message = "Success scenario"),
+    @ApiResponse(code = 400, message = "Error scenario")
+})
+```
+
+2. **Model Documentation**
+```java
+@ApiModel(description = "Detailed model description")
+public class SampleModel {
+    @ApiModelProperty(
+        value = "Clear property description",
+        example = "Meaningful example",
+        required = true,
+        position = 1
+    )
+    private String property;
+}
+```
+
+3. **Security Documentation**
+```java
+@ApiOperation(
+    value = "Secure endpoint",
+    authorizations = {
+        @Authorization(value = "JWT")
+    }
+)
+@GetMapping("/secure")
+public ResponseEntity<Data> secureEndpoint() {
+    // Implementation
+}
+```
+
+## Conclusion
+
+Springfox (Swagger) is a powerful tool for API documentation that, when used correctly, can significantly improve the developer experience for API consumers. By following these patterns and practices, you can create clear, comprehensive, and maintainable API documentation that evolves with your application.
+
+Remember to:
+- Keep documentation up to date
+- Provide meaningful examples
+- Document error scenarios
+- Include authentication requirements
+- Use consistent naming and descriptions
+
+## Additional Resources
+
+- [Springfox Official Documentation](https://springfox.github.io/springfox/docs/current/)
+- [OpenAPI Specification](https://swagger.io/specification/)
+- [Spring Boot Documentation](https://docs.spring.io/spring-boot/docs/current/reference/html/)
