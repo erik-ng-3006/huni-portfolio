@@ -1,0 +1,208 @@
+---
+title: "Advanced Spring Boot Security Patterns for Enterprise Applications"
+date: "2024-12-18"
+summary: "A comprehensive guide to implementing robust security patterns in Spring Boot applications, covering OAuth2 integration, custom authentication providers, method-level security, and industry best practices."
+author: "Erik Nguyen"
+---
+
+# Advanced Spring Boot Security Patterns for Enterprise Applications
+
+Security is a crucial aspect of any enterprise application, and Spring Boot provides a robust framework for implementing sophisticated security patterns. In this post, we'll explore advanced security implementations that will help you build more secure applications.
+
+## OAuth2 Implementation
+
+OAuth2 has become the de facto standard for secure authorization in modern applications. Let's examine how to implement OAuth2 in a Spring Boot application:
+
+```java
+@Configuration
+@EnableWebSecurity
+public class OAuth2SecurityConfig extends WebSecurityConfigurerAdapter {
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http
+            .oauth2Login()                // Enable OAuth2 login
+                .userInfoEndpoint()       // Configure user info endpoint
+                    .userService(customOAuth2UserService())
+            .and()
+            .authorizeRequests()
+                .antMatchers("/api/public/**").permitAll()
+                .antMatchers("/api/private/**").authenticated()
+            .and()
+            .csrf().disable();            // Disable CSRF for REST APIs
+    }
+
+    @Bean
+    public OAuth2UserService<OAuth2UserRequest, OAuth2User> customOAuth2UserService() {
+        return new CustomOAuth2UserService();
+    }
+}
+```
+
+The above configuration sets up OAuth2 login and defines custom user service handling. A key aspect here is the separation of public and private endpoints, ensuring proper access control.
+
+## Custom Authentication Providers
+
+Sometimes standard authentication mechanisms aren't sufficient for complex enterprise requirements. Here's how to implement a custom authentication provider:
+
+```java
+@Component
+public class CustomAuthenticationProvider implements AuthenticationProvider {
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Override
+    public Authentication authenticate(Authentication authentication)
+            throws AuthenticationException {
+        String username = authentication.getName();
+        String password = authentication.getCredentials().toString();
+
+        // Custom authentication logic
+        UserDetails user = userService.loadUserByUsername(username);
+
+        if (passwordEncoder.matches(password, user.getPassword())) {
+            // Additional validation logic here
+            return new UsernamePasswordAuthenticationToken(
+                user,
+                password,
+                user.getAuthorities()
+            );
+        }
+
+        throw new BadCredentialsException("Authentication failed");
+    }
+
+    @Override
+    public boolean supports(Class<?> authentication) {
+        return authentication.equals(UsernamePasswordAuthenticationToken.class);
+    }
+}
+```
+
+This custom provider allows for complex authentication scenarios, such as multi-factor authentication or integration with legacy systems.
+
+## Method-Level Security
+
+Method-level security provides fine-grained access control at the function level. Here's how to implement it effectively:
+
+```java
+@Configuration
+@EnableGlobalMethodSecurity(
+    prePostEnabled = true,
+    securedEnabled = true,
+    jsr250Enabled = true
+)
+public class MethodSecurityConfig extends GlobalMethodSecurityConfiguration {
+
+    @Override
+    protected MethodSecurityExpressionHandler createExpressionHandler() {
+        DefaultMethodSecurityExpressionHandler expressionHandler =
+            new DefaultMethodSecurityExpressionHandler();
+        expressionHandler.setPermissionEvaluator(new CustomPermissionEvaluator());
+        return expressionHandler;
+    }
+}
+
+@Service
+public class UserService {
+
+    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.id")
+    public UserDTO getUserDetails(Long userId) {
+        // Method implementation
+        return userRepository.findById(userId)
+            .map(UserMapper::toDTO)
+            .orElseThrow(() -> new UserNotFoundException(userId));
+    }
+
+    @PostAuthorize("returnObject.owner == authentication.principal.username")
+    public Document getDocument(Long documentId) {
+        // Method implementation
+        return documentRepository.findById(documentId)
+            .orElseThrow(() -> new DocumentNotFoundException(documentId));
+    }
+}
+```
+
+The above example demonstrates both pre and post-authorization checks, ensuring that users can only access resources they're authorized to view.
+
+## Security Best Practices
+
+Let's explore some critical security best practices that should be implemented in every Spring Boot application:
+
+### 1. Secure Password Storage
+
+```java
+@Configuration
+public class SecurityConfig {
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder(12);  // Use strong hashing
+    }
+}
+```
+
+### 2. CORS Configuration
+
+```java
+@Configuration
+public class WebSecurityConfig {
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Arrays.asList("https://trusted-domain.com"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+}
+```
+
+### 3. XSS Prevention
+
+```java
+@Bean
+public HeaderWriter headerWriter() {
+    return new XContentTypeOptionsHeaderWriter();
+}
+
+@Bean
+public HttpFirewall httpFirewall() {
+    StrictHttpFirewall firewall = new StrictHttpFirewall();
+    firewall.setAllowSemicolon(false);
+    firewall.setAllowBackSlash(false);
+    return firewall;
+}
+```
+
+### 4. Session Management
+
+```java
+@Override
+protected void configure(HttpSecurity http) throws Exception {
+    http
+        .sessionManagement()
+            .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+            .maximumSessions(1)
+            .maxSessionsPreventsLogin(true)
+        .and()
+            .sessionFixation()
+            .newSession();
+}
+```
+
+## Conclusion
+
+Implementing robust security patterns in Spring Boot requires careful consideration of various aspects, from authentication and authorization to protection against common security vulnerabilities. By following these patterns and best practices, you can build applications that are both secure and maintainable.
+
+Remember that security is not a one-time implementation but an ongoing process. Regular security audits, dependency updates, and staying informed about new security threats are essential practices for maintaining a secure application.
+
+Happy coding, and stay secure! 🔐
