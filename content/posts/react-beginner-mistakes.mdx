@@ -1,0 +1,253 @@
+---
+title: "Top 5 Mistakes Beginners Make in React and How to Avoid Them"
+date: "2024-12-19"
+author: "Erik Nguyen"
+summary: "Learn about common React pitfalls that beginners often encounter and how to solve them with best practices and practical examples."
+---
+
+# Top 5 Mistakes Beginners Make in React and How to Avoid Them
+
+As a beginner in React, it's easy to fall into certain traps that can lead to bugs, poor performance, or hard-to-maintain code. Let's explore the most common mistakes and learn how to avoid them.
+
+<Callout type="warning">
+    Important Note: The examples below show both incorrect and correct implementations. Pay attention to the differences and comments explaining why certain approaches are preferred.
+</Callout>
+
+## 1. Misunderstanding State Updates
+
+One of the most common mistakes is not understanding how React's state updates work, especially their asynchronous nature.
+
+❌ **Incorrect Approach:**
+
+```javascript
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  const increment = () => {
+    // This won't work as expected
+    setCount(count + 1);
+    setCount(count + 1);
+  };
+
+  return (
+    <button onClick={increment}>Increment</button>
+  );
+}
+```
+
+✅ **Correct Approach:**
+
+```javascript
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  const increment = () => {
+    // Use functional updates when new state depends on previous
+    setCount(prevCount => prevCount + 1);
+    setCount(prevCount => prevCount + 1);
+  };
+
+  return (
+    <button onClick={increment}>Increment</button>
+  );
+}
+```
+
+<Callout type="info">
+    Best Practice: Always use the functional update form when new state depends on the previous state. This ensures you're working with the most current values.
+</Callout>
+
+## 2. Improper useEffect Dependencies
+
+Missing or incorrect dependencies in useEffect is another major source of bugs.
+
+❌ **Incorrect Approach:**
+
+```javascript
+function UserProfile({ userId }) {
+  const [user, setUser] = useState(null);
+
+  // Missing dependency
+  useEffect(() => {
+    fetchUser(userId).then(data => setUser(data));
+  }, []); // Empty dependency array!
+
+  return <div>{user?.name}</div>;
+}
+```
+
+✅ **Correct Approach:**
+
+```javascript
+function UserProfile({ userId }) {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    let isSubscribed = true;
+
+    fetchUser(userId).then(data => {
+      if (isSubscribed) {
+        setUser(data);
+      }
+    });
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [userId]); // Include all dependencies
+
+  return <div>{user?.name}</div>;
+}
+```
+
+<Callout type="success">
+    Pro Tip: Use the ESLint plugin eslint-plugin-react-hooks to catch missing dependencies automatically.
+</Callout>
+
+## 3. Creating New Objects/Functions on Every Render
+
+Beginners often unknowingly create new objects or functions on every render, potentially causing unnecessary re-renders.
+
+❌ **Incorrect Approach:**
+
+```javascript
+function TodoList({ todos }) {
+  // New function created on every render
+  const sortTodos = () => {
+    return todos.sort((a, b) => a.priority - b.priority);
+  };
+
+  // New object created on every render
+  return (
+    <TodoItems
+      todos={sortTodos()}
+      config={{ theme: 'dark', animate: true }}
+    />
+  );
+}
+```
+
+✅ **Correct Approach:**
+
+```javascript
+function TodoList({ todos }) {
+  // Memoize function
+  const sortTodos = useCallback(() => {
+    return todos.sort((a, b) => a.priority - b.priority);
+  }, [todos]);
+
+  // Memoize object
+  const config = useMemo(() => ({
+    theme: 'dark',
+    animate: true
+  }), []);
+
+  return <TodoItems todos={sortTodos()} config={config} />;
+}
+```
+
+<Callout type="error">
+    Performance Tip: Use <code>useMemo</code> and <code>useCallback</code> judiciously. Not every function or object needs to be memoized.
+</Callout>
+
+## 4. Direct DOM Manipulation
+
+Many beginners try to directly manipulate the DOM instead of letting React handle it.
+
+❌ **Incorrect Approach:**
+
+```javascript
+function Modal() {
+  useEffect(() => {
+    // Direct DOM manipulation - bad!
+    document.getElementById('modal').style.display = 'block';
+  });
+
+  return <div id="modal">Modal Content</div>;
+}
+```
+
+✅ **Correct Approach:**
+
+```javascript
+function Modal({ isOpen }) {
+  // Let React handle the DOM
+  return (
+    <div className={`modal ${isOpen ? 'block' : 'hidden'}`}>
+      Modal Content
+    </div>
+  );
+}
+```
+
+<Callout type="error">
+    Performance Tip: Avoid direct DOM manipulation. Let React handle it.
+</Callout>
+
+## 5. Not Breaking Down Components
+
+Beginners often create large, monolithic components instead of breaking them into smaller, reusable pieces.
+
+❌ **Incorrect Approach:**
+
+```javascript
+function UserDashboard() {
+  return (
+    <div>
+      {/* Everything in one component */}
+      <header>...</header>
+      <nav>...</nav>
+      <main>
+        <userProfile>...</userProfile>
+        <userStats>...</userStats>
+        <userPosts>...</userPosts>
+      </main>
+      <footer>...</footer>
+    </div>
+  );
+}
+```
+
+✅ **Correct Approach:**
+
+```javascript
+function Header() { return <header>...</header>; }
+function Navigation() { return <nav>...</nav>; }
+function UserProfile() { return <section>...</section>; }
+function UserStats() { return <section>...</section>; }
+function UserPosts() { return <section>...</section>; }
+function Footer() { return <footer>...</footer>; }
+
+function UserDashboard() {
+  return (
+    <div>
+      <Header />
+      <Navigation />
+      <main>
+        <UserProfile />
+        <UserStats />
+        <UserPosts />
+      </main>
+      <Footer />
+    </div>
+  );
+}
+```
+
+<Callout type="info">
+     💡Component Design Tip: Follow the Single Responsibility Principle: each component should do one thing well.
+</Callout>
+
+## Conclusion
+
+Avoiding these common mistakes will help you write better React code from the start. Remember:
+
+1. Use functional updates for state that depends on previous state
+2. Properly manage useEffect dependencies
+3. Memoize when necessary to prevent unnecessary re-renders
+4. Let React handle the DOM
+5. Break down components into smaller, manageable pieces
+
+Keep these principles in mind as you build your React applications, and you'll be well on your way to writing more maintainable and performant code.
+
+Happy coding! 🚀
