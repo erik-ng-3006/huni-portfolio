@@ -1,0 +1,369 @@
+---
+title: "Building a Modern Authentication System with React, TypeScript, Zustand, and React Router"
+date: "2024-12-31"
+summary: "Learn how to implement a robust authentication system in your React TypeScript application using Zustand for state management and React Router for protected routes. This guide covers everything from setup to implementation of protected routes and persistent sessions."
+author: "Erik Nguyen"
+---
+
+Authentication is a crucial aspect of modern web applications, but implementing it correctly can be challenging. In this guide, we'll build a complete authentication system using React, TypeScript, Zustand for state management, and React Router for handling protected routes. We'll create a solution that's both type-safe and maintainable.
+
+## Setting Up Our Project
+
+First, let's create a new React project with TypeScript and install our dependencies. If you're starting from scratch:
+
+```bash
+npm create vite@latest my-auth-app -- --template react-ts
+cd my-auth-app
+npm install zustand react-router-dom axios
+```
+
+## Defining Our Authentication Types
+
+Let's start by defining our authentication types. Create a new file called `types/auth.ts`:
+
+```typescript
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+}
+
+export interface AuthState {
+  user: User | null;
+  token: string | null;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
+  checkAuth: () => Promise<void>;
+}
+```
+
+## Creating Our Authentication Store
+
+Now, let's implement our authentication store using Zustand. Create a new file called `stores/authStore.ts`:
+
+```typescript
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import axios from 'axios';
+import { AuthState } from '../types/auth';
+
+// We'll create an axios instance with a base URL
+const api = axios.create({
+  baseURL: 'https://api.your-backend.com',
+});
+
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      user: null,
+      token: null,
+      loading: true,
+
+      login: async (email: string, password: string) => {
+        try {
+          // Replace with your actual API endpoint
+          const response = await api.post('/auth/login', {
+            email,
+            password,
+          });
+
+          const { user, token } = response.data;
+
+          // Update our store with the authentication data
+          set({ user, token, loading: false });
+
+          // Set the token in axios defaults for subsequent requests
+          api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        } catch (error) {
+          console.error('Login failed:', error);
+          throw error;
+        }
+      },
+
+      logout: () => {
+        // Clear the authentication state
+        set({ user: null, token: null });
+
+        // Remove the token from axios defaults
+        delete api.defaults.headers.common['Authorization'];
+      },
+
+      checkAuth: async () => {
+        try {
+          set({ loading: true });
+
+          // Replace with your actual API endpoint
+          const response = await api.get('/auth/me');
+          const user = response.data;
+
+          set({ user, loading: false });
+        } catch (error) {
+          set({ user: null, token: null, loading: false });
+        }
+      },
+    }),
+    {
+      name: 'auth-storage', // Name for the persisted store
+      partialize: (state) => ({ token: state.token }), // Only persist the token
+    }
+  )
+);
+```
+
+## Creating Protected Route Components
+
+Let's create a higher-order component to protect our routes. Create a new file called `components/ProtectedRoute.tsx`:
+
+```typescript
+import { ReactNode } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
+import { useAuthStore } from '../stores/authStore';
+
+interface ProtectedRouteProps {
+  children: ReactNode;
+}
+
+export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+  const { user, loading } = useAuthStore();
+  const location = useLocation();
+
+  // Show loading state while checking authentication
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  // Redirect to login if user is not authenticated
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  return <>{children}</>;
+};
+```
+
+## Implementing the Login Component
+
+Create a new file called `components/Login.tsx`:
+
+```typescript
+import { FormEvent, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuthStore } from '../stores/authStore';
+
+export const Login = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const navigate = useNavigate();
+  const location = useLocation();
+  const login = useAuthStore((state) => state.login);
+
+  // Get the page we were trying to visit
+  const from = location.state?.from?.pathname || '/';
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    try {
+      await login(email, password);
+      navigate(from, { replace: true });
+    } catch (err) {
+      setError('Login failed. Please check your credentials.');
+    }
+  };
+
+  return (
+    <div className="login-container">
+      <h1>Login</h1>
+      {error && <div className="error">{error}</div>}
+      <form onSubmit={handleSubmit}>
+        <div>
+          <label htmlFor="email">Email:</label>
+          <input
+            type="email"
+            id="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <label htmlFor="password">Password:</label>
+          <input
+            type="password"
+            id="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
+        <button type="submit">Login</button>
+      </form>
+    </div>
+  );
+};
+```
+
+## Setting Up Routes
+
+Now, let's set up our application routes in `App.tsx`:
+
+```typescript
+import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { useAuthStore } from './stores/authStore';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { Login } from './components/Login';
+import { Dashboard } from './components/Dashboard';
+
+const App = () => {
+	const checkAuth = useAuthStore((state) => state.checkAuth);
+
+	useEffect(() => {
+		checkAuth();
+	}, [checkAuth]);
+
+	return (
+		<BrowserRouter>
+			<Routes>
+				<Route path='/login' element={<Login />} />
+				<Route
+					path='/dashboard'
+					element={
+						<ProtectedRoute>
+							<Dashboard />
+						</ProtectedRoute>
+					}
+				/>
+				{/* Add more protected routes as needed */}
+			</Routes>
+		</BrowserRouter>
+	);
+};
+
+export default App;
+```
+
+## Using Authentication in Components
+
+Here's how you can use the authentication state in any component:
+
+```typescript
+import { Link } from 'react-router-dom';
+import { useAuthStore } from '../stores/authStore';
+
+export const NavBar = () => {
+  const { user, logout } = useAuthStore();
+
+  return (
+    <nav>
+      {user ? (
+        <>
+          <span>Welcome, {user.name}!</span>
+          <button onClick={logout}>Logout</button>
+        </>
+      ) : (
+        <Link to="/login">Login</Link>
+      )}
+    </nav>
+  );
+};
+```
+
+## Adding TypeScript Best Practices
+
+To make our authentication system more robust, let's add some TypeScript utilities:
+
+```typescript
+// utils/auth.ts
+import { useAuthStore } from '../stores/authStore';
+
+export const isAuthenticated = (): boolean => {
+  const user = useAuthStore.getState().user;
+  return user !== null;
+};
+
+export const getAuthToken = (): string | null => {
+  return useAuthStore.getState().token;
+};
+
+// Type guard for user object
+export const isUser = (user: unknown): user is User => {
+  return (
+    typeof user === 'object' &&
+    user !== null &&
+    'id' in user &&
+    'email' in user &&
+    'name' in user
+  );
+};
+```
+
+## Handling API Requests
+
+Let's create a utility for making authenticated API requests:
+
+```typescript
+// utils/api.ts
+import axios, { AxiosRequestConfig } from 'axios';
+import { getAuthToken } from './auth';
+
+export const api = axios.create({
+  baseURL: 'https://api.your-backend.com',
+});
+
+api.interceptors.request.use((config) => {
+  const token = getAuthToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      // Handle token expiration
+      useAuthStore.getState().logout();
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+```
+
+## Conclusion
+
+We've built a complete authentication system that:
+
+- Manages authentication state with Zustand
+- Protects routes using React Router
+- Persists authentication tokens
+- Handles API requests with proper authentication headers
+- Provides type safety with TypeScript
+- Includes error handling and loading states
+
+This implementation provides a solid foundation for building secure React applications. You can extend it further by adding features like:
+
+- Refresh tokens
+- Remember me functionality
+- Password reset flows
+- Social authentication
+- Multi-factor authentication
+
+Remember to always follow security best practices:
+
+- Store sensitive data securely
+- Use HTTPS for all API requests
+- Implement proper CSRF protection
+- Handle token expiration gracefully
+- Validate user input
+- Implement rate limiting
+- Use secure password hashing on the backend
+
+The complete code for this implementation is available in the repository linked below
+- [https://github.com/erik-ng-3006/demo-auth-react-with-zustand](https://github.com/erik-ng-3006/demo-auth-react-with-zustand).
