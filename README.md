@@ -141,10 +141,8 @@ Contributions are welcome! Please open an issue or submit a pull request for sug
 -   [Sonner](https://sonner.emilkowal.ski/)
 
 ## Contact & Social Links
-
--   [LinkedIn](https://www.linkedin.com/in/your-profile)
--   [Twitter](https://twitter.com/your-profile)
--   Email: your@email.com
+-   [Facebook](https://www.facebook.com/erikng306)
+-   Email: erikng3006@gmail.com
 
 ## License
 
